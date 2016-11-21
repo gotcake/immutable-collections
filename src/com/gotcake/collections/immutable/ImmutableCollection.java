@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 /**
  * @author Aaron Cake (acake)
  */
-abstract class BaseImmutableCollection<T, SelfType extends BaseImmutableCollection<T, SelfType>> implements Collection<T> {
+abstract class ImmutableCollection<T, SelfType extends ImmutableCollection<T, SelfType>> implements Collection<T> {
 
     @Override
     public Object[] toArray() {

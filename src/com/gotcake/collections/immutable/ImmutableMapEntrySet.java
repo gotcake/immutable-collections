@@ -1,21 +1,17 @@
 package com.gotcake.collections.immutable;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 /**
  * @author Aaron Cake (gotcake)
  */
-public class ImmutableMapEntrySet<K, V> extends BaseImmutableSet<Map.Entry<K, V>, ImmutableMapEntrySet<K, V>>  {
+public class ImmutableMapEntrySet<K, V> extends ImmutableSet<Map.Entry<K, V>, ImmutableMapEntrySet<K, V>> {
 
-    private final BaseImmutableMap<K, V, ?> map;
-    private List<BaseImmutableMap.Entry<K, V>> entryCache;
+    private final ImmutableMap<K, V, ?> map;
 
-    public ImmutableMapEntrySet(BaseImmutableMap<K, V, ?> map) {
+    public ImmutableMapEntrySet(ImmutableMap<K, V, ?> map) {
         this.map = map;
-        entryCache = null;
     }
 
     @Override
@@ -41,16 +37,6 @@ public class ImmutableMapEntrySet<K, V> extends BaseImmutableSet<Map.Entry<K, V>
     @Override
     @SuppressWarnings("unchecked")
     public Iterator<Map.Entry<K, V>> iterator() {
-        if (map.hasFastEntryIteration()) {
-            return (Iterator)map.entryIterator();
-        }
-        if (entryCache == null) {
-            entryCache = new ArrayList<>(size());
-            final Iterator<BaseImmutableMap.Entry<K, V>> entryIterator = map.entryIterator();
-            while (entryIterator.hasNext()) {
-                entryCache.add(entryIterator.next());
-            }
-        }
-        return (Iterator)entryCache.iterator();
+        return (Iterator)map.entryIterator();
     }
 }

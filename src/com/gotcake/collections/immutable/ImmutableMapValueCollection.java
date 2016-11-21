@@ -6,11 +6,11 @@ import java.util.function.Consumer;
 /**
  * @author Aaron Cake (acake)
  */
-public class ImmutableMapValueCollection<T> extends BaseImmutableCollection<T, ImmutableMapValueCollection<T>> {
+public class ImmutableMapValueCollection<T> extends ImmutableCollection<T, ImmutableMapValueCollection<T>> {
 
-    private final BaseImmutableMap<?, T, ?> map;
+    private final ImmutableMap<?, T, ?> map;
 
-    public ImmutableMapValueCollection(BaseImmutableMap<?, T, ?> map) {
+    public ImmutableMapValueCollection(ImmutableMap<?, T, ?> map) {
         this.map = map;
     }
 

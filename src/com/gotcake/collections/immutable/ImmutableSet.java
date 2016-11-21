@@ -5,7 +5,7 @@ import java.util.*;
 /**
  * @author Aaron Cake (gotcake)
  */
-abstract class BaseImmutableSet<T, SelfType extends BaseImmutableSet<T, SelfType>> extends BaseImmutableCollection<T, SelfType> implements Set<T> {
+abstract class ImmutableSet<T, SelfType extends ImmutableSet<T, SelfType>> extends ImmutableCollection<T, SelfType> implements Set<T> {
     @Override
     public Spliterator<T> spliterator() {
         return Spliterators.spliterator(iterator(), size(),

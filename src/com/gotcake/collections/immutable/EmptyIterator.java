@@ -9,12 +9,7 @@ import java.util.function.Consumer;
  */
 public final class EmptyIterator<T> implements Iterator<T> {
 
-    private static EmptyIterator INSTANCE = new EmptyIterator();
-
-    @SuppressWarnings("unchecked")
-    static <T> EmptyIterator<T> get() {
-        return INSTANCE;
-    }
+    static EmptyIterator INSTANCE = new EmptyIterator();
 
     private EmptyIterator() {}
 

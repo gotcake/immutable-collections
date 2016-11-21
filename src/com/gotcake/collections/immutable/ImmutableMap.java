@@ -8,7 +8,7 @@ import java.util.function.Function;
 /**
  * @author Aaron Cake (acake)
  */
-abstract class BaseImmutableMap<K, V, SelfType extends BaseImmutableMap<K, V, SelfType>> implements Map<K, V> {
+abstract class ImmutableMap<K, V, SelfType extends ImmutableMap<K, V, SelfType>> implements Map<K, V> {
 
     public static class Entry<K, V> implements Map.Entry<K, V> {
 
@@ -52,19 +52,12 @@ abstract class BaseImmutableMap<K, V, SelfType extends BaseImmutableMap<K, V, Se
         }
     }
 
-    // we cache the entry set because if this map does not have fast entry iteration,
-    // the entry set will cache entries for us and save object allocation
-    protected ImmutableMapEntrySet<K, V> cachedEntrySet = null;
-    protected Integer cachedHashCode = null;
-
     public abstract boolean containsEntry(final K key, final V value);
     protected abstract Iterator<Entry<K, V>> entryIterator();
     public abstract Iterator<K> keyIterator();
     public abstract Iterator<V> valueIterator();
     public abstract void forEachKey(Consumer<? super K> action);
     public abstract void forEachValue(Consumer<? super V> action);
-    protected abstract boolean hasFastEntryIteration();
-    protected abstract int computeHashCode();
     public abstract SelfType update(final K key, final BiFunction<? super K, ? super V, ? extends V> mapperFn);
     public abstract SelfType updateIfPresent(final K key, final BiFunction<? super K, ? super V, ? extends V> mapperFn);
     public abstract SelfType updateIfAbsent(final K key, final Function<? super K, ? extends V> computeFn);
@@ -160,14 +153,6 @@ abstract class BaseImmutableMap<K, V, SelfType extends BaseImmutableMap<K, V, Se
             return (SelfType)this;
         }
         return updateIfPresent(key, (K k, V existing) -> existing.equals(value) ? null : existing);
-    }
-
-    @Override
-    public Set<Map.Entry<K, V>> entrySet() {
-        if (cachedEntrySet == null) {
-            cachedEntrySet = new ImmutableMapEntrySet<>(this);
-        }
-        return cachedEntrySet;
     }
 
     @Override
@@ -274,14 +259,6 @@ abstract class BaseImmutableMap<K, V, SelfType extends BaseImmutableMap<K, V, Se
     public Spliterator<V> valueSpliterator() {
         return Spliterators.spliterator(valueIterator(), size(),
                 Spliterator.IMMUTABLE | Spliterator.CONCURRENT | Spliterator.SIZED);
-    }
-
-    @Override
-    public int hashCode() {
-        if (cachedHashCode == null) {
-            cachedHashCode = computeHashCode();
-        }
-        return cachedHashCode;
     }
 
 }
