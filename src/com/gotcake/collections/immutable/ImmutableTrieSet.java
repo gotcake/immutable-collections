@@ -1,5 +1,6 @@
 package com.gotcake.collections.immutable;
 
+import java.lang.reflect.Array;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -12,6 +13,7 @@ import java.util.stream.Stream;
 public abstract class ImmutableTrieSet<T> extends ImmutableSet<T, ImmutableTrieSet<T>> {
 
     private static final ImmutableTrieSet EMPTY_INSTANCE = new Empty();
+    private static final Object[] EMPTY_ARRAY = new Object[0];
 
     @SuppressWarnings("unchecked")
     public static <T> ImmutableTrieSet<T> of() {
@@ -81,6 +83,17 @@ public abstract class ImmutableTrieSet<T> extends ImmutableSet<T, ImmutableTrieS
         @Override
         public ImmutableTrieSet<T> delete(T element) {
             return this;
+        }
+
+        @Override
+        public Object[] toArray() {
+            return EMPTY_ARRAY;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T1> T1[] toArray(T1[] a) {
+            return a.length == 0 ? a : (T1[])Array.newInstance(a.getClass().getComponentType(), 0);
         }
     }
 
