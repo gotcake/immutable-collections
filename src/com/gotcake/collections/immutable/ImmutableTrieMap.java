@@ -182,7 +182,12 @@ public abstract class ImmutableTrieMap<K, V> extends ImmutableMap<K, V, Immutabl
 
         @Override
         public int hashCode() {
-            return 0; // just a random non-zero value (same as computeHashCode)
+            return 0;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj == this || (obj instanceof Map && ((Map)obj).isEmpty());
         }
 
         @Override

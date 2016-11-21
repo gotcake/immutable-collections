@@ -38,4 +38,14 @@ class ImmutableMapKeySet<T> extends ImmutableSet<T, ImmutableMapKeySet<T>> {
     public void forEach(Consumer<? super T> action) {
         map.forEachKey(action);
     }
+
+    @Override
+    public ImmutableMapKeySet<T> insert(T element) {
+        throw new UnsupportedOperationException("insert is not supported");
+    }
+
+    @Override
+    public ImmutableMapKeySet<T> delete(T element) {
+        throw new UnsupportedOperationException("delete is not supported");
+    }
 }

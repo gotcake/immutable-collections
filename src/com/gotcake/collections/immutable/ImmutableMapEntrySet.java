@@ -39,4 +39,14 @@ public class ImmutableMapEntrySet<K, V> extends ImmutableSet<Map.Entry<K, V>, Im
     public Iterator<Map.Entry<K, V>> iterator() {
         return (Iterator)map.entryIterator();
     }
+
+    @Override
+    public ImmutableMapEntrySet<K, V> insert(Map.Entry<K, V> element) {
+        throw new UnsupportedOperationException("insert is not supported");
+    }
+
+    @Override
+    public ImmutableMapEntrySet<K, V> delete(Map.Entry<K, V> element) {
+        throw new UnsupportedOperationException("delete is not supported");
+    }
 }
