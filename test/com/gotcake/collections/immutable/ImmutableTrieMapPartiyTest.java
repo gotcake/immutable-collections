@@ -21,13 +21,20 @@ public class ImmutableTrieMapPartiyTest {
         ImmutableTrieMap<String, Integer> map = ImmutableTrieMap.of();
         final HashMap<String, Integer> hashMap = new HashMap<>();
         final StringBuilder buffer = new StringBuilder(102);
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 2000000; i++) {
             final String key = TestHelper.generateRandomString(buffer, random);
             final int value = (int)(random.nextFloat() * 1000000);
-            map = map.set(key, value);
+            final ImmutableTrieMap<String, Integer> temp = map.set(key, value);
+            if (!hashMap.containsKey(key)) {
+                if (temp == map) {
+                    temp.assertValid();
+                    assertNotSame("ImmutableTrieMap must return new instance when adding a new key", temp, map);
+                }
+            }
             hashMap.put(key, value);
+            map = temp;
         }
-        map.assertSanity();
+        map.assertValid();
         System.out.println(map.computeDebugInfo());
         assertEquals(hashMap.size(), map.size());
         final HashSet<String> keysToRemove = new HashSet<>();
@@ -48,6 +55,7 @@ public class ImmutableTrieMapPartiyTest {
             assertNotNull("[Meta] Sanity check that we can remove key from hash map", hashMap.remove(key));
             final ImmutableTrieMap<String, Integer> temp = map.delete(key);
             if (map == temp) {
+                temp.assertValid();
                 assertNotSame("ImmutableTrieMap must return new instance when removing an existing key", temp, map);
             }
             map = temp;
@@ -59,7 +67,7 @@ public class ImmutableTrieMapPartiyTest {
             assertTrue("Iterator must iterate over existing keys only once", keySet.remove(entry.key));
             assertEquals("Iterator Entries must  have correct value", hashMap.get(entry.key), entry.value);
         }
-        map.assertSanity();
+        map.assertValid();
         System.out.println(map.computeDebugInfo());
         assertEquals(hashMap.size(), map.size());
         for (final Map.Entry<String, Integer> entry: hashMap.entrySet()) {

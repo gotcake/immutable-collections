@@ -11,13 +11,11 @@ public class DebugInfo {
     private Map<Class, Integer> nodeCounts;
     private int maxDepth;
     private int size;
-    private int computedSize;
 
-    public DebugInfo(int size, int computedSize) {
+    public DebugInfo(int size) {
         nodeCounts = new HashMap<>();
         maxDepth = 0;
         this.size = size;
-        this.computedSize = computedSize;
     }
 
     public void registerNode(final Class<?> nodeClass, int depth) {
@@ -31,7 +29,6 @@ public class DebugInfo {
         final StringBuilder sb = new StringBuilder();
         sb.append("DebugInfo[\n");
         sb.append("    size = ").append(size).append('\n');
-        sb.append("    computedSize = ").append(computedSize).append('\n');
         sb.append("    maxDepth = ").append(maxDepth).append('\n');
         nodeCounts.forEach((clazz, count) -> {
             sb.append("    nodeCount(").append(clazz.getSimpleName()).append(") = ").append(count).append('\n');

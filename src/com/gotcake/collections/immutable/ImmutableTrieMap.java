@@ -1,13 +1,12 @@
 package com.gotcake.collections.immutable;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import static com.gotcake.collections.immutable.TrieUtil.*;
 
 /**
  * An immutable map-like data structure based on the Hash Array Mapped Trie described at
@@ -84,7 +83,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         if (root == null || key == null) {
             return false;
         }
-        final int prefix = TrieUtil.computeSmearHash(key);
+        final int prefix = computeSmearHash(key);
         return root.get((K)key, prefix) != null;
     }
 
@@ -98,7 +97,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         if (root == null || key == null || value == null) {
             return false;
         }
-        final int prefix = TrieUtil.computeSmearHash(key);
+        final int prefix = computeSmearHash(key);
         final V existingValue = root.get(key, prefix);
         return existingValue.equals(value);
     }
@@ -114,7 +113,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         if (root == null) {
             return null;
         }
-        final int prefix = TrieUtil.computeSmearHash(key);
+        final int prefix = computeSmearHash(key);
         return root.get((K)key, prefix);
     }
 
@@ -193,7 +192,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
      */
     @SuppressWarnings("unchecked")
     private ImmutableTrieMap<K, V> updateInternal(final K key, final SingleUpdateConfig<K, V> singleUpdateConfig) {
-        final int prefix = TrieUtil.computeSmearHash(key);
+        final int prefix = computeSmearHash(key);
         final Node<K, V> newRoot = root.update(singleUpdateConfig, key, prefix, 0);
         if (newRoot != root) {
             if (newRoot == null) {
@@ -283,7 +282,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         if (root == null || key == null) {
             return defaultValue;
         }
-        final int prefix = TrieUtil.computeSmearHash(key);
+        final int prefix = computeSmearHash(key);
         final V existingValue = root.get((K)key, prefix);
         return existingValue == null ? defaultValue : existingValue;
     }
@@ -389,35 +388,42 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
 
 
     DebugInfo computeDebugInfo() {
-        final DebugInfo info = new DebugInfo(size, root == null ? 0 : root.computeSize());
+        final DebugInfo info = new DebugInfo(size);
         if (root != null) {
             root.computeDebugInfo(info, 1);
         }
         return info;
     }
 
-    void assertSanity() {
+    void assertValid() {
+        if (root == null) {
+            return;
+        }
+        final Stack<Node<K, V>> stack = new Stack<>();
         try {
-            if (root != null) {
-                TrieUtil.assertThat("computed size must equal stored size", root.computeSize() == size);
-                root.assertSanity(null, 0, 0);
-            }
-        } catch (IllegalStateException e) {
-            System.out.println("Error: " + e.getMessage());
-            System.out.println(computeDebugInfo());
+            int computedSize = root.assertValidityAndComputeSize(stack, 0, 0);
+            assertEqual("computed size must equal stored size", size, computedSize);
+        } catch (Exception e) {
+            List<Node<K, V>> trail = new ArrayList<>();
+            trail.addAll(stack);
+            System.err.print("Error: ");
+            System.err.println(e.getMessage());
+            StringBuilder sb = new StringBuilder();
+            root.printTree(sb, trail, 0, 0, 0);
+            System.err.println("Invalid SubTree:");
+            System.err.println(sb.toString());
+            System.err.println(computeDebugInfo());
             throw e;
         }
     }
 
-    void printTree() {
+    public String toTreeString() {
         if (root != null) {
-            final StringWriter stringWriter = new StringWriter();
-            try {
-                root.printTree(stringWriter, 0, 0, 0);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            System.out.println(stringWriter.toString());
+            final StringBuilder sb = new StringBuilder();
+            root.printTree(sb, null, 0, 0, 0);
+            return sb.toString();
+        } else {
+            return "<empty>";
         }
     }
 
@@ -466,32 +472,42 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         private V computeNotExist(final K key) {
-            TrieUtil.assertThat("updateIfNotExists must be true", updateIfNotExists);
-            TrieUtil.assertThat("this is the first time calling a fn", !didCallFn);
-            didCallFn = true;
+            if (DEBUG) {
+                assertThat("updateIfNotExists must be true", updateIfNotExists);
+                assertThat("this is the first time calling a fn", !didCallFn);
+                didCallFn = true;
+            }
             if (computeFn != null) {
                 return computeFn.apply(key);
             }
-            Objects.requireNonNull(mapperFn, "either computeFn or mapperFn must not be null");
+            if (DEBUG) {
+                Objects.requireNonNull(mapperFn, "either computeFn or mapperFn must not be null");
+            }
             return mapperFn.apply(key, null);
 
         }
 
         private V computeExists(final K key, final V value) {
-            TrieUtil.assertThat("updateIfNotExists must be true", updateIfExists);
-            Objects.requireNonNull(mapperFn, "mapperFn must not be null");
-            TrieUtil.assertThat("this is the first time calling a fn", !didCallFn);
-            didCallFn = true;
+            if (DEBUG) {
+                assertThat("updateIfNotExists must be true", updateIfExists);
+                Objects.requireNonNull(mapperFn, "mapperFn must not be null");
+                assertThat("this is the first time calling a fn", !didCallFn);
+                didCallFn = true;
+            }
             return mapperFn.apply(key, value);
         }
 
         private void informNodeRemoved() {
-            TrieUtil.assertThat("this is the first time informing about a node operation", sizeChange == 0);
+            if (DEBUG) {
+                assertThat("this is the first time informing about a node operation", sizeChange == 0);
+            }
             sizeChange = -1;
         }
 
         private void informNodeInserted() {
-            TrieUtil.assertThat("this is the first time informing about a node operation", sizeChange == 0);
+            if (DEBUG) {
+                assertThat("this is the first time informing about a node operation", sizeChange == 0);
+            }
             sizeChange = 1;
         }
 
@@ -503,12 +519,11 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
     private interface Node<K, V>  {
         Node<K, V> update(final SingleUpdateConfig<K, V> singleUpdateConfig, final K key, final int prefix, final int depth);
         V get(final K key, final int prefix);
-        int computeSize();
         void computeDebugInfo(final DebugInfo info, int curDepth);
-        void assertSanity(final Node<K, V> parent, int prefix, int curDepth);
+        int assertValidityAndComputeSize(final Stack<Node<K, V>> stack, int prefix, int curDepth);
         void pushChildren(final Stack<Node<K, V>> stack);
         boolean equals(final Node<?, ?> other);
-        void printTree(Writer writer, int printDepth, int suffix, int nodeDepth) throws IOException;
+        void printTree(StringBuilder sb, List<Node<K,V>> trail, int printDepth, int suffix, int nodeDepth);
     }
 
     /**
@@ -559,25 +574,24 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         @Override
-        public int computeSize() {
-            return child.computeSize();
-        }
-
-        @Override
         public void computeDebugInfo(DebugInfo info, int curDepth) {
             info.registerNode(SingleNode.class, curDepth);
             child.computeDebugInfo(info, curDepth + 1);
         }
 
         @Override
-        public void assertSanity(final Node<K, V> parent, int suffix, int curDepth) {
-            TrieUtil.assertValidType("SingleNode parent", parent, true,
+        public int assertValidityAndComputeSize(final Stack<Node<K, V>> stack, int suffix, int curDepth) {
+            final Node<K, V> parent = stack.isEmpty() ? null : stack.peek();
+            stack.push(this);
+            assertValidType("SingleNode parent", parent, true,
                     SingleNode.class, DoubleNode.class, TripleNode.class, MapNode.class);
-            TrieUtil.assertThat("SingleNode depth cannot be greater than 6", curDepth <= 6);
-            TrieUtil.assertThat("SingleNode child must not be null", child != null);
-            TrieUtil.assertThat("SingleNode childBitIndex must be non-negative", childBitIndex >= 0);
-            TrieUtil.assertThat("SingleNode childBitIndex must be less than 32", childBitIndex < 32);
-            child.assertSanity(this, TrieUtil.computeChildHashSuffix(suffix, childBitIndex, curDepth), curDepth + 1);
+            assertThat("SingleNode depth cannot be greater than 6", curDepth <= 6);
+            assertThat("SingleNode child must not be null", child != null);
+            assertThat("SingleNode childBitIndex must be non-negative", childBitIndex >= 0);
+            assertThat("SingleNode childBitIndex must be less than 32", childBitIndex < 32);
+            int size = child.assertValidityAndComputeSize(stack, computeChildHashSuffix(suffix, childBitIndex, curDepth), curDepth + 1);
+            stack.pop();
+            return size;
         }
 
         @Override
@@ -593,17 +607,19 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         @Override
-        public void printTree(Writer writer, int printDepth, int suffix, int curDepth) throws IOException {
-            TrieUtil.printIndent(writer, printDepth);
-            writer.write("+ SingleNode");
+        public void printTree(StringBuilder sb, List<Node<K,V>> trail, int printDepth, int suffix, int curDepth) {
+            printIndent(sb, printDepth);
+            sb.append("+ SingleNode");
             if (curDepth > 0) {
-                writer.write(" prefix = ");
-                TrieUtil.printIntBitsHighlight(writer, suffix, (curDepth - 1) * 5, 5, curDepth * 5);
+                sb.append(" prefix = ");
+                printIntBitsHighlight(sb, suffix, (curDepth - 1) * 5, 5, curDepth * 5);
             }
-            writer.write('\n');
-            child.printTree(writer, printDepth + 1, TrieUtil.computeChildHashSuffix(suffix, childBitIndex, curDepth), curDepth + 1);
+            sb.append('\n');
+            // if we are printing the entire tree, or this node is along the trail, print its children
+            if (checkIsAlongTrail(trail, this)) {
+                child.printTree(sb, trail, printDepth + 1, computeChildHashSuffix(suffix, childBitIndex, curDepth), curDepth + 1);
+            }
         }
-
     }
 
     /**
@@ -650,7 +666,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
             final int bitIndex = prefix >>> 27;
             if (hasChild(bitIndex)) {
                 // this map node has the given bit index, the key might exist in a descendant
-                final int logicalIndex = TrieUtil.computeLogicalIndex(mask, bitIndex);
+                final int logicalIndex = computeLogicalIndex(mask, bitIndex);
                 final Node<K, V> child = getChild(logicalIndex);
                 final Node<K, V> newChild = child.update(updateConfig, key, prefix << 5, depth + 1);
                 if (child != newChild) {
@@ -668,7 +684,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
                 final V value = updateConfig.computeNotExist(key);
                 if (value != null) {
                     updateConfig.informNodeInserted();
-                    final int logicalIndex = TrieUtil.computeLogicalIndex(mask, bitIndex);
+                    final int logicalIndex = computeLogicalIndex(mask, bitIndex);
                     final int newMask = mask | (1 << bitIndex);
                     return insertChild(newMask, logicalIndex, new LeafNode<>(key, value));
                 }
@@ -679,7 +695,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         @Override
         public V get(final K key, final int prefix) {
             final int index = prefix >>> 27;
-            return hasChild(index) ? getChild(TrieUtil.computeLogicalIndex(mask, index)).get(key, prefix << 5) : null;
+            return hasChild(index) ? getChild(computeLogicalIndex(mask, index)).get(key, prefix << 5) : null;
         }
 
     }
@@ -751,15 +767,6 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         @Override
-        public int computeSize() {
-            int total = 0;
-            for (final Node<K, V> child: children) {
-                total += child.computeSize();
-            }
-            return total;
-        }
-
-        @Override
         public void computeDebugInfo(DebugInfo info, int curDepth) {
             info.registerNode(MapNode.class, curDepth);
             for (final Node<K, V> child: children) {
@@ -768,31 +775,38 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         @Override
-        public void assertSanity(final Node<K, V> parent, final int suffix, final int curDepth) {
-            TrieUtil.assertThat("MapNode must have size of at least 4", children.length >= 4);
-            TrieUtil.assertThat("MapNode mask bit count must match size", Integer.bitCount(mask) == children.length);
-            TrieUtil.assertValidType("MapNode parent", parent, true,
+        public int assertValidityAndComputeSize(final Stack<Node<K, V>> stack, final int suffix, final int curDepth) {
+            final Node<K, V> parent = stack.isEmpty() ? null : stack.peek();
+            stack.push(this);
+            assertThat("MapNode must have size of at least 4", children.length >= 4);
+            assertThat("MapNode mask bit count must match size", Integer.bitCount(mask) == children.length);
+            assertValidType("MapNode parent", parent, true,
                     SingleNode.class, DoubleNode.class, TripleNode.class, MapNode.class);
-            TrieUtil.assertThat("MapNode depth cannot be greater than 6", curDepth <= 6);
+            assertThat("MapNode depth cannot be greater than 6", curDepth <= 6);
             for (final Node<K, V> child: children) {
-                TrieUtil.assertThat("MapNode children must not be null", child != null);
+                assertThat("MapNode children must not be null", child != null);
             }
+            int size = 0;
             for (int i = 0; i < children.length; i++) {
-                children[i].assertSanity(this, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, i), curDepth), curDepth + 1);
+                size += children[i].assertValidityAndComputeSize(stack, computeChildHashSuffix(suffix, nthSetBitPosition(mask, i), curDepth), curDepth + 1);
             }
+            stack.pop();
+            return size;
         }
 
         @Override
-        public void printTree(Writer writer, int printDepth, int suffix, int curDepth) throws IOException {
-            TrieUtil.printIndent(writer, printDepth);
-            writer.write("+ MapNode");
+        public void printTree(StringBuilder sb, List<Node<K, V>> trail, int printDepth, int suffix, int curDepth) {
+            printIndent(sb, printDepth);
+            sb.append("+ MapNode");
             if (curDepth > 0) {
-                writer.write(" prefix = ");
-                TrieUtil.printIntBitsHighlight(writer, suffix, (curDepth - 1) * 5, 5, curDepth * 5);
+                sb.append(" prefix = ");
+                printIntBitsHighlight(sb, suffix, (curDepth - 1) * 5, 5, curDepth * 5);
             }
-            writer.write('\n');
-            for (int i = 0; i < children.length; i++) {
-                children[i].printTree(writer, printDepth + 1, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, i), curDepth), curDepth + 1);
+            sb.append('\n');
+            if (checkIsAlongTrail(trail, this)) {
+                for (int i = 0; i < children.length; i++) {
+                    children[i].printTree(sb, trail, printDepth + 1, computeChildHashSuffix(suffix, nthSetBitPosition(mask, i), curDepth), curDepth + 1);
+                }
             }
         }
 
@@ -877,11 +891,6 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         @Override
-        public int computeSize() {
-            return childA.computeSize() + childB.computeSize();
-        }
-
-        @Override
         public void computeDebugInfo(DebugInfo info, int curDepth) {
             info.registerNode(DoubleNode.class, curDepth);
             childA.computeDebugInfo(info, curDepth + 1);
@@ -889,14 +898,19 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         @Override
-        public void assertSanity(final Node<K, V> parent, final int suffix, final int curDepth) {
-            TrieUtil.assertThat("DoubleNode mask bit count must be 2", Integer.bitCount(mask) == 2);
-            TrieUtil.assertValidType("DoubleNode parent", parent, true,
+        public int assertValidityAndComputeSize(final Stack<Node<K, V>> stack, final int suffix, final int curDepth) {
+            final Node<K, V> parent = stack.isEmpty() ? null : stack.peek();
+            stack.push(this);
+            assertThat("DoubleNode mask bit count must be 2", Integer.bitCount(mask) == 2);
+            assertValidType("DoubleNode parent", parent, true,
                     SingleNode.class, DoubleNode.class, TripleNode.class, MapNode.class);
-            TrieUtil.assertThat("DoubleNode depth cannot be greater than 6", curDepth <= 6);
-            TrieUtil.assertThat("DoubleNode children must not be null", childA != null && childB != null);
-            childA.assertSanity(this, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, 0), curDepth), curDepth + 1);
-            childB.assertSanity(this, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, 1), curDepth), curDepth + 1);
+            assertThat("DoubleNode depth cannot be greater than 6", curDepth <= 6);
+            assertThat("DoubleNode children must not be null", childA != null && childB != null);
+            int size = 0;
+            size += childA.assertValidityAndComputeSize(stack, computeChildHashSuffix(suffix, nthSetBitPosition(mask, 0), curDepth), curDepth + 1);
+            size += childB.assertValidityAndComputeSize(stack, computeChildHashSuffix(suffix, nthSetBitPosition(mask, 1), curDepth), curDepth + 1);
+            stack.pop();
+            return size;
         }
 
         @Override
@@ -906,16 +920,18 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         @Override
-        public void printTree(Writer writer, int printDepth, int suffix, int curDepth) throws IOException {
-            TrieUtil.printIndent(writer, printDepth);
-            writer.write("+ DoubleNode");
+        public void printTree(StringBuilder sb, List<Node<K, V>> trail, int printDepth, int suffix, int curDepth) {
+            printIndent(sb, printDepth);
+            sb.append("+ DoubleNode");
             if (curDepth > 0) {
-                writer.write(" prefix = ");
-                TrieUtil.printIntBitsHighlight(writer, suffix, (curDepth - 1) * 5, 5, curDepth * 5);
+                sb.append(" prefix = ");
+                printIntBitsHighlight(sb, suffix, (curDepth - 1) * 5, 5, curDepth * 5);
             }
-            writer.write('\n');
-            childA.printTree(writer, printDepth + 1, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, 0), curDepth), curDepth + 1);
-            childB.printTree(writer, printDepth + 1, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, 1), curDepth), curDepth + 1);
+            sb.append('\n');
+            if (checkIsAlongTrail(trail, this)) {
+                childA.printTree(sb, trail, printDepth + 1, computeChildHashSuffix(suffix, nthSetBitPosition(mask, 0), curDepth), curDepth + 1);
+                childB.printTree(sb, trail, printDepth + 1, computeChildHashSuffix(suffix, nthSetBitPosition(mask, 1), curDepth), curDepth + 1);
+            }
         }
 
         @Override
@@ -1020,11 +1036,6 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         @Override
-        public int computeSize() {
-            return childA.computeSize() + childB.computeSize() + childC.computeSize();
-        }
-
-        @Override
         public void computeDebugInfo(DebugInfo info, int curDepth) {
             info.registerNode(TripleNode.class, curDepth);
             childA.computeDebugInfo(info, curDepth + 1);
@@ -1032,29 +1043,35 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
             childC.computeDebugInfo(info, curDepth + 1);
         }
 
-        @Override
-        public void assertSanity(final Node<K, V> parent, final int suffix, final int curDepth) {
-            TrieUtil.assertThat("TripleNode mask bit count must be 3", Integer.bitCount(mask) == 3);
-            TrieUtil.assertValidType("TripleNode parent", parent, true,
+        public int assertValidityAndComputeSize(final Stack<Node<K, V>> stack, final int suffix, final int curDepth) {
+            final Node<K, V> parent = stack.isEmpty() ? null : stack.peek();
+            stack.push(this);
+            assertThat("TripleNode mask bit count must be 3", Integer.bitCount(mask) == 3);
+            assertValidType("TripleNode parent", parent, true,
                     SingleNode.class, DoubleNode.class, TripleNode.class, MapNode.class);
-            TrieUtil.assertThat("TripleNode children must not be null", childA != null && childB != null && childC != null);
-            childA.assertSanity(this, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, 0), curDepth), curDepth + 1);
-            childB.assertSanity(this, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, 1), curDepth), curDepth + 1);
-            childC.assertSanity(this, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, 2), curDepth), curDepth + 1);
+            assertThat("TripleNode children must not be null", childA != null && childB != null && childC != null);
+            int size = 0;
+            size += childA.assertValidityAndComputeSize(stack, computeChildHashSuffix(suffix, nthSetBitPosition(mask, 0), curDepth), curDepth + 1);
+            size += childB.assertValidityAndComputeSize(stack, computeChildHashSuffix(suffix, nthSetBitPosition(mask, 1), curDepth), curDepth + 1);
+            size += childC.assertValidityAndComputeSize(stack, computeChildHashSuffix(suffix, nthSetBitPosition(mask, 2), curDepth), curDepth + 1);
+            stack.pop();
+            return size;
         }
 
         @Override
-        public void printTree(Writer writer, int printDepth, int suffix, int curDepth) throws IOException {
-            TrieUtil.printIndent(writer, printDepth);
-            writer.write("+ TripleNode");
+        public void printTree(StringBuilder sb, List<Node<K, V>> trail, int printDepth, int suffix, int curDepth) {
+            printIndent(sb, printDepth);
+            sb.append("+ TripleNode");
             if (curDepth > 0) {
-                writer.write(" prefix = ");
-                TrieUtil.printIntBitsHighlight(writer, suffix, (curDepth - 1) * 5, 5, curDepth * 5);
+                sb.append(" prefix = ");
+                printIntBitsHighlight(sb, suffix, (curDepth - 1) * 5, 5, curDepth * 5);
             }
-            writer.write('\n');
-            childA.printTree(writer, printDepth + 1, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, 0), curDepth), curDepth + 1);
-            childB.printTree(writer, printDepth + 1, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, 1), curDepth), curDepth + 1);
-            childC.printTree(writer, printDepth + 1, TrieUtil.computeChildHashSuffix(suffix, TrieUtil.nthSetBitPosition(mask, 2), curDepth), curDepth + 1);
+            sb.append('\n');
+            if (checkIsAlongTrail(trail, this)) {
+                childA.printTree(sb, trail, printDepth + 1, computeChildHashSuffix(suffix, nthSetBitPosition(mask, 0), curDepth), curDepth + 1);
+                childB.printTree(sb, trail, printDepth + 1, computeChildHashSuffix(suffix, nthSetBitPosition(mask, 1), curDepth), curDepth + 1);
+                childC.printTree(sb, trail, printDepth + 1, computeChildHashSuffix(suffix, nthSetBitPosition(mask, 2), curDepth), curDepth + 1);
+            }
         }
 
         @Override
@@ -1082,7 +1099,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
             super(key, value);
         }
 
-        protected LeafNode<K, V> updateLeaf(final SingleUpdateConfig<K, V> updateConfig, final K key) {
+        protected LeafNode<K, V> updateLeaf(final SingleUpdateConfig<K, V> updateConfig, final K key, int prefix, int depth) {
             if (this.key.equals(key)) {
                 // found the entry
                 if (updateConfig.updateIfExists) {
@@ -1129,9 +1146,9 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
                 final V newValue = updateConfig.computeNotExist(key);
                 if (newValue != null) {
                     updateConfig.informNodeInserted();
-                    if (depth < 6) {
+                    if (depth <= 6) {
                         // we have some hash bits left over, use them to determine if we can insert a new map node
-                        final int thisPrefix = TrieUtil.computeHashPrefix(this.key, depth);
+                        final int thisPrefix = computeHashPrefix(this.key, depth);
                         if (prefix == thisPrefix) { // if the prefixes are the same it's a hash collision, chain a new LinkedLeafNode
                             return new LinkedLeafNode<>(key, newValue, this);
                         }
@@ -1152,20 +1169,18 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         @Override
-        public int computeSize() {
-            return 1;
-        }
-
-        @Override
         public void computeDebugInfo(DebugInfo info, int curDepth) {
             info.registerNode(LeafNode.class, curDepth);
         }
 
-        @Override
-        public void assertSanity(final Node<K, V> parent, final int suffix, final int curDepth) {
-            TrieUtil.assertValidType("LeafNode parent", parent, true,
+        public int assertValidityAndComputeSize(final Stack<Node<K, V>> stack, final int suffix, final int curDepth) {
+            final Node<K, V> parent = stack.isEmpty() ? null : stack.peek();
+            stack.push(this);
+            assertValidType("LeafNode parent", parent, true,
                     DoubleNode.class, TripleNode.class, MapNode.class, LinkedLeafNode.class);
-            TrieUtil.assertEqual("LeafNode (" + key + "->" + value + ") suffix mismatch", suffix, TrieUtil.computeHashSuffix(key, curDepth));
+            assertEqual("LeafNode (" + key + "->" + value + ") suffix mismatch", suffix, computeHashSuffix(key, curDepth));
+            stack.pop();
+            return 1;
         }
 
         @Override
@@ -1174,11 +1189,11 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         @Override
-        public void printTree(Writer writer, int printDepth, int suffix, int curDepth) throws IOException {
-            TrieUtil.printIndent(writer, printDepth);
-            writer.write("+ LeafNode (" + key + "->"+ value + ") hash = ");
-            TrieUtil.printIntBitsHighlight(writer, TrieUtil.computeSmearHash(key), (curDepth - 1) * 5, 5, 32);
-            writer.write('\n');
+        public void printTree(StringBuilder sb, List<Node<K, V>> trail, int printDepth, int suffix, int curDepth) {
+            printIndent(sb, printDepth);
+            sb.append("+ LeafNode (").append(key).append("->").append(value).append(") hash = ");
+            printIntBitsHighlight(sb, computeSmearHash(key), (curDepth - 1) * 5, 5, 32);
+            sb.append('\n');
         }
 
         @Override
@@ -1206,7 +1221,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
             this.next = next;
         }
 
-        protected LeafNode<K, V> updateLeaf(final SingleUpdateConfig<K, V> updateConfig, final K key) {
+        protected LeafNode<K, V> updateLeaf(final SingleUpdateConfig<K, V> updateConfig, final K key, int depth, int prefix) {
             if (this.key.equals(key)) {
                 // found the entry
                 if (updateConfig.updateIfExists) {
@@ -1222,7 +1237,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
                     }
                 }
             } else {
-                final LeafNode<K, V> newNext = next.updateLeaf(updateConfig, key);
+                final LeafNode<K, V> newNext = next.updateLeaf(updateConfig, key, depth, prefix);
                 if (newNext == null) {
                     // remove next node
                     return new LeafNode<>(this.key, value);
@@ -1252,9 +1267,9 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
                     }
                 }
             } else {
-                if (depth < 6) {
+                if (depth <= 6) {
                     // we have some bits left, check if we need to create a map node
-                    final int thisPrefix = TrieUtil.computeHashPrefix(this.key, depth);
+                    final int thisPrefix = computeHashPrefix(this.key, depth);
                     if (prefix != thisPrefix) {
                         if (!updateConfig.updateIfNotExists) {
                             // key does not exist, quit early if updateIfNotExists is false
@@ -1269,7 +1284,7 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
                     }
                 }
                 // prefixes are the same or we ran out of bits: it's a hash collision, key guaranteed to be in this chain
-                final LeafNode<K, V> newNext = next.updateLeaf(updateConfig, key);
+                final LeafNode<K, V> newNext = next.updateLeaf(updateConfig, key, depth, prefix);
                 if (newNext == null) {
                     // remove next node
                     return new LeafNode<>(this.key, value);
@@ -1292,32 +1307,32 @@ public final class ImmutableTrieMap<K, V> extends BaseImmutableMap<K, V, Immutab
         }
 
         @Override
-        public int computeSize() {
-            return 1 + next.computeSize();
-        }
-
-        @Override
         public void computeDebugInfo(DebugInfo info, int curDepth) {
             info.registerNode(LinkedLeafNode.class, curDepth);
             next.computeDebugInfo(info, curDepth + 1);
         }
 
-        @Override
-        public void assertSanity(final Node<K, V> parent, final int suffix, final int curDepth) {
-            TrieUtil.assertValidType("LinkedLeafNode parent", parent, true,
+        public int assertValidityAndComputeSize(final Stack<Node<K, V>> stack, final int suffix, final int curDepth) {
+            final Node<K, V> parent = stack.isEmpty() ? null : stack.peek();
+            stack.push(this);
+            assertValidType("LinkedLeafNode parent", parent, true,
                     DoubleNode.class, TripleNode.class, MapNode.class, LinkedLeafNode.class);
-            TrieUtil.assertThat("LinkedLeafNode next must not be null", next != null);
-            TrieUtil.assertEqual("LinkedLeafNode (" + key + "->" + value + ") suffix mismatch", suffix, TrieUtil.computeHashSuffix(key, curDepth));
-            next.assertSanity(this, suffix, curDepth);
+            assertThat("LinkedLeafNode next must not be null", next != null);
+            assertEqual("LinkedLeafNode (" + key + "->" + value + ") suffix mismatch", suffix, computeHashSuffix(key, curDepth));
+            int nextSize = next.assertValidityAndComputeSize(stack, suffix, curDepth);
+            stack.pop();
+            return nextSize + 1;
         }
 
         @Override
-        public void printTree(Writer writer, int printDepth, int suffix, int curDepth) throws IOException {
-            TrieUtil.printIndent(writer, printDepth);
-            writer.write("+ LinkedLeafNode (" + key + "->"+ value + ") hash = ");
-            TrieUtil.printIntBitsHighlight(writer, TrieUtil.computeSmearHash(key), (curDepth - 1) * 5, 5, 32);
-            writer.write('\n');
-            next.printTree(writer, printDepth + 1, suffix, curDepth);
+        public void printTree(StringBuilder sb, List<Node<K, V>> trail, int printDepth, int suffix, int curDepth) {
+            printIndent(sb, printDepth);
+            sb.append("+ LinkedLeafNode (").append(key).append("->").append(value).append(") hash = ");
+            printIntBitsHighlight(sb, computeSmearHash(key), (curDepth - 1) * 5, 5, 32);
+            sb.append('\n');
+            if (checkIsAlongTrail(trail, this)) {
+                next.printTree(sb, trail, printDepth + 1, suffix, curDepth);
+            }
         }
 
         @Override

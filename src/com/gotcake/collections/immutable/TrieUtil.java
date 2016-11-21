@@ -2,8 +2,7 @@ package com.gotcake.collections.immutable;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -14,10 +13,10 @@ public final class TrieUtil {
 
     private static final int C1 = 0xcc9e2d51;
     private static final int C2 = 0x1b873593;
-    private static final int ALL_BITS = ~0;
-    private static final int ALL_BITS_EXCEPT_TWO = ~0b11;
     private static final char[] INDENT = new char[1024];
     private static final char[] ZEROS = new char[32];
+
+    public static final boolean DEBUG = false; // change this if you need to debug something
 
     static {
         Arrays.fill(ZEROS, '0');
@@ -33,7 +32,8 @@ public final class TrieUtil {
      * @return the smeared hash
      */
     public static int computeSmearHash(final Object obj) {
-        return C2 * Integer.rotateLeft(obj.hashCode() * C1, 15);
+        final int a = obj.hashCode() * C1;
+        return C2 * ((a << 15) | (a >>> 17));
     }
 
     /**
@@ -43,7 +43,7 @@ public final class TrieUtil {
      * @return the hash prefix for the object and current tree depth
      */
     public static int computeHashPrefix(final Object obj, final int depth) {
-        if (depth < 0 || depth > 6) {
+        if (DEBUG && (depth < 0 || depth > 6)) {
             throw new IllegalArgumentException("Invalid depth " + depth + ". Must be in range [0, 6]");
         }
         return computeSmearHash(obj) << (5 * depth);
@@ -56,7 +56,7 @@ public final class TrieUtil {
      * @return the hash prefix for the object and current tree depth
      */
     public static int computeHashSuffix(final Object obj, final int depth) {
-        if (depth < 0 || depth > 7) {
+        if (DEBUG && (depth < 0 || depth > 7)) {
             throw new IllegalArgumentException("Invalid depth " + depth + ". Must be in range [0, 7]");
         }
         if (depth == 0) { // handle 0 separately since shifting by 32 does nothing
@@ -77,7 +77,7 @@ public final class TrieUtil {
      * @return the position of the nth set bit
      */
     public static int nthSetBitPosition(int mask, int n) {
-        if (n < 0 || n >= Integer.bitCount(mask)) {
+        if (DEBUG && (n < 0 || n >= Integer.bitCount(mask))) {
             throw new IndexOutOfBoundsException("Invalid bit position " + n + " for integer " + Integer.toHexString(mask));
         }
         int pos = -1;
@@ -107,6 +107,16 @@ public final class TrieUtil {
         }
         return suffix | (bitIndex << (27 - (curDepth * 5)));
     }
+
+    /*
+    mask &= ((1 << bitIndex) - 1);
+        mask -= ((mask >>> 1) & 0x55555555);
+        mask = (mask & 0x33333333) + ((mask >>> 2) & 0x33333333);
+        mask = (mask + (mask >>> 4)) & 0x0f0f0f0f;
+        mask += (mask >>> 8);
+        mask += (mask >>> 16);
+        return mask & 0x3f;
+     */
 
     /**
      * Computes the logical index for an item given the mask and bitIndex
@@ -147,12 +157,12 @@ public final class TrieUtil {
         throw new IllegalStateException(baseMsg + " cannot be an instance of " + value.getClass().getSimpleName());
     }
 
-    public static void printIndent(final Writer writer, int i) throws IOException {
+    public static void printIndent(final StringBuilder sb, int i) {
         if (i > 256) {
-            writer.write(INDENT, 0, INDENT.length);
-            printIndent(writer, i - 256);
+            sb.append(INDENT, 0, INDENT.length);
+            printIndent(sb, i - 256);
         } else {
-            writer.write(INDENT, 0, i * 4);
+            sb.append(INDENT, 0, i * 4);
         }
     }
 
@@ -164,7 +174,18 @@ public final class TrieUtil {
         return str + 'b';
     }
 
-    public static void printIntBitsHighlight(Writer writer, int i, int start, int length, int trimLen) throws IOException {
+    public static boolean checkIsAlongTrail(List<?> trail, Object obj) {
+        if (trail == null) {
+            return true;
+        }
+        if (!trail.isEmpty() && trail.get(0) == obj) {
+            trail.remove(0);
+            return true;
+        }
+        return false;
+    }
+
+    public static void printIntBitsHighlight(StringBuilder sb, int i, int start, int length, int trimLen) {
         String str = Integer.toBinaryString(i);
         if (str.length() < trimLen) {
             str = new String(ZEROS, 0, trimLen - str.length()) + str;
@@ -172,22 +193,22 @@ public final class TrieUtil {
             str = str.substring(0, trimLen);
         }
         if (start > 0) {
-            writer.write(str, 0, start);
+            sb.append(str, 0, start);
         } else if (start < 0) {
-            writer.write(str);
+            sb.append(str);
             return;
         }
         if (start + length <= trimLen) {
-            writer.write('(');
-            writer.write(str, start, length);
-            writer.write(')');
+            sb.append('(');
+            sb.append(str, start, start + length);
+            sb.append(')');
         }
 
         if (start + length < trimLen) {
-            writer.write(str, start + length, trimLen - start - length);
+            sb.append(str, start + length, trimLen);
         }
 
-        writer.write('b');
+        sb.append('b');
     }
 
     public static <K, V> Function<K, V> functionThatReturns(final V value) {

@@ -12,7 +12,7 @@ public final class TestHelper {
 
     public static String generateRandomString(final StringBuilder buffer, final Random random) {
         buffer.setLength(0);
-        int length = (int)(Math.random() * 100) + 2;
+        int length = (int)(random.nextFloat() * 100) + 2;
         for (int i = 0; i < length; i++) {
             int index = (int)(random.nextFloat() * VALID_CHARS.length());
             buffer.append(VALID_CHARS.charAt(index));

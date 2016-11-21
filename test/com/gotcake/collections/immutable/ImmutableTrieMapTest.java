@@ -9,44 +9,44 @@ public class ImmutableTrieMapTest {
     @Test
     public void testEmpty() {
         final ImmutableTrieMap<String, Integer> map = ImmutableTrieMap.of();
-        System.out.println(map.computeDebugInfo());
         assertEquals(0, map.size());
         assertSame(ImmutableTrieMap.of(), ImmutableTrieMap.of());
-        map.assertSanity();
+        map.assertValid();
     }
 
     @Test
     public void testSingleBasic() {
         ImmutableTrieMap<String, Integer> map = ImmutableTrieMap.of("foo", 2);
-        System.out.println(map.computeDebugInfo());
         assertEquals(1, map.size());
         assertTrue(map.containsKey("foo"));
         assertNotNull(map.get("foo"));
         assertEquals(2, (long)map.get("foo"));
-        map.assertSanity();
+        map.assertValid();
     }
 
     @Test
     public void testSingleReplacement() throws Exception {
         final ImmutableTrieMap<String, Integer> map = ImmutableTrieMap.of("foo", 2).set("foo", 3);
-        System.out.println(map.computeDebugInfo());
         assertEquals(1, map.size());
         assertTrue(map.containsKey("foo"));
         assertNotNull(map.get("foo"));
         assertEquals(3, (long)map.get("foo"));
-        map.assertSanity();
+        map.assertValid();
     }
 
     @Test
     public void testManyBasic() throws Exception {
         ImmutableTrieMap<String, Integer> map = ImmutableTrieMap.of();
         map = map.set("foo", 1);
+        map.assertValid();
         map = map.set("bar", 2);
+        map.assertValid();
         map = map.set("null", 5);
+        map.assertValid();
         map = map.set("baz", 3);
+        map.assertValid();
         map = map.set("redrover", 0);
-        // verify expected values
-        map.printTree();
+        map.assertValid();
         assertEquals(5, map.size());
         assertTrue(map.containsKey("foo"));
         assertTrue(map.containsKey("bar"));
@@ -63,7 +63,6 @@ public class ImmutableTrieMapTest {
         assertEquals(5, (int)map.get("null"));
         assertEquals(3, (int)map.get("baz"));
         assertEquals(0, (int)map.get("redrover"));
-        map.assertSanity();
     }
 
     @Test
@@ -77,15 +76,16 @@ public class ImmutableTrieMapTest {
         map = map.set("zoidberg", 10);
         map = map.set("baz", 3);
         map = map.set("redrover", 0);
+        map.assertValid();
         // now replace stuff
         map = map.set("null", -1);
         map = map.set("baz", 100);
         map = map.set("redrover", 8);
+        map.assertValid();
         // add some more
         map = map.set("hello", 7);
+        map.assertValid();
         // verify expected values
-        System.out.println(map.computeDebugInfo());
-        map.printTree();
         assertEquals(9, map.size());
         assertTrue(map.containsKey("foo"));
         assertTrue(map.containsKey("bar"));
@@ -105,8 +105,6 @@ public class ImmutableTrieMapTest {
         assertEquals(100, (int)map.get("baz"));
         assertEquals(8, (int)map.get("redrover"));
         assertEquals(7, (int)map.get("hello"));
-        map.printTree();
-        map.assertSanity();
     }
 
     @Test
@@ -119,8 +117,8 @@ public class ImmutableTrieMapTest {
         map = map.set("null", 5);
         map = map.set("AaAa", 3);
         map = map.set("BBBB", 0);
+        map.assertValid();
         // verify expected values
-        System.out.println(map.computeDebugInfo());
         assertEquals(5, map.size());
         assertTrue(map.containsKey("Aa"));
         assertTrue(map.containsKey("BB"));
@@ -137,7 +135,6 @@ public class ImmutableTrieMapTest {
         assertEquals(5, (int)map.get("null"));
         assertEquals(3, (int)map.get("AaAa"));
         assertEquals(0, (int)map.get("BBBB"));
-        map.assertSanity();
     }
 
     @Test
@@ -149,32 +146,31 @@ public class ImmutableTrieMapTest {
                 .set("BB", 4)
                 .set("stuff2", 5)
                 .set("helloWorld3", 6);
-        map.assertSanity();
+        map.assertValid();
         assertEquals(5, map.size());
         map = map.delete("foobar");
-        map.assertSanity();
+        map.assertValid();
         assertEquals(4, map.size());
-        map.assertSanity();
+        map.assertValid();
         map = map.set("AaAa", 7)
                 .set("BBBB", 8)
                 .set("stuff", 9)
                 .set("helloWorld", 10);
-        map.assertSanity();
+        map.assertValid();
         assertEquals(8, map.size());
         map = map.delete("helloWorld");
-        map.assertSanity();
+        map.assertValid();
         assertEquals(7, map.size());
         map = map.delete("AaAa");
-        map.assertSanity();
+        map.assertValid();
         assertEquals(6, map.size());
         map = map.delete("stuff");
-        map.assertSanity();
+        map.assertValid();
         assertEquals(5, map.size());
-        map.assertSanity();
+        map.assertValid();
         map = map.set("thisisareallylongstring", 11)
                 .set("AaAa", 12);
-        System.out.println(map.computeDebugInfo());
-        map.assertSanity();
+        map.assertValid();
         assertEquals(7, map.size());
         assertEquals((Integer)2, map.get("Aa"));
         assertEquals((Integer)4, map.get("BB"));
@@ -184,19 +180,19 @@ public class ImmutableTrieMapTest {
         assertEquals((Integer)11, map.get("thisisareallylongstring"));
         assertEquals((Integer)6, map.get("helloWorld3"));
         map = map.delete("Aa");
-        map.assertSanity();
+        map.assertValid();
         map = map.delete("BB");
-        map.assertSanity();
+        map.assertValid();
         map = map.delete("stuff2");
-        map.assertSanity();
+        map.assertValid();
         map = map.delete("AaAa");
-        map.assertSanity();
+        map.assertValid();
         map = map.delete("BBBB");
-        map.assertSanity();
+        map.assertValid();
         map = map.delete("thisisareallylongstring");
-        map.assertSanity();
+        map.assertValid();
         map = map.delete("helloWorld3");
-        map.assertSanity();
+        map.assertValid();
         assertEquals(0, map.size());
         assertSame(ImmutableTrieMap.of(), map);
     }

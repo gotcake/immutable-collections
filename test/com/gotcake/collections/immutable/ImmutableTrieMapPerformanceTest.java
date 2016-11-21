@@ -14,11 +14,11 @@ import java.util.TreeMap;
  */
 public class ImmutableTrieMapPerformanceTest {
 
-    private static final String[] KEYS = new String[1000000];
+    private static final String[] KEYS = new String[2000000];
     private static final String[] KEYS_SMALL = new String[100];
 
     @BeforeClass
-    public static void setupSuite() {
+    public static void setupSuite() throws InterruptedException {
         final StringBuilder buffer = new StringBuilder(102);
         final Random random = new Random(231435363);
         for (int i = 0; i < KEYS.length; i++) {
