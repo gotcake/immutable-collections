@@ -3,20 +3,19 @@ package com.gotcake.collections.immutable;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
- * Created by aaron on 7/2/16.
+ * Just some utilities
+ * @author Aaron Cake
  */
-public final class TrieUtil {
+final class Util {
 
     private static final int C1 = 0xcc9e2d51;
     private static final int C2 = 0x1b873593;
     private static final char[] INDENT = new char[1024];
     private static final char[] ZEROS = new char[32];
 
-    public static final boolean DEBUG = false; // change this if you need to debug something
+    static final boolean DEBUG = true; // change this if you need to debug something
 
     static {
         Arrays.fill(ZEROS, '0');
@@ -31,7 +30,7 @@ public final class TrieUtil {
      * @param obj the object to hash
      * @return the smeared hash
      */
-    public static int computeSmearHash(final Object obj) {
+    static int computeSmearHash(final Object obj) {
         final int a = obj.hashCode() * C1;
         return C2 * ((a << 15) | (a >>> 17));
     }
@@ -42,7 +41,7 @@ public final class TrieUtil {
      * @param depth the current tree depth
      * @return the hash prefix for the object and current tree depth
      */
-    public static int computeHashPrefix(final Object obj, final int depth) {
+    static int computeHashPrefix(final Object obj, final int depth) {
         if (DEBUG && (depth < 0 || depth > 6)) {
             throw new IllegalArgumentException("Invalid depth " + depth + ". Must be in range [0, 6]");
         }
@@ -55,7 +54,7 @@ public final class TrieUtil {
      * @param depth the current tree depth
      * @return the hash prefix for the object and current tree depth
      */
-    public static int computeHashSuffix(final Object obj, final int depth) {
+    static int computeHashSuffix(final Object obj, final int depth) {
         if (DEBUG && (depth < 0 || depth > 7)) {
             throw new IllegalArgumentException("Invalid depth " + depth + ". Must be in range [0, 7]");
         }
@@ -76,7 +75,7 @@ public final class TrieUtil {
      * @param n n
      * @return the position of the nth set bit
      */
-    public static int nthSetBitPosition(int mask, int n) {
+    static int nthSetBitPosition(int mask, int n) {
         if (DEBUG && (n < 0 || n >= Integer.bitCount(mask))) {
             throw new IndexOutOfBoundsException("Invalid bit position " + n + " for integer " + Integer.toHexString(mask));
         }
@@ -95,7 +94,7 @@ public final class TrieUtil {
      * @param bitIndex the bit index of the child
      * @return the child's hash suffix
      */
-    public static int computeChildHashSuffix(final int suffix, final int bitIndex, int curDepth) {
+    static int computeChildHashSuffix(final int suffix, final int bitIndex, int curDepth) {
         if (bitIndex < 0 || bitIndex > 31) {
             throw new IndexOutOfBoundsException("Invalid bit index " + bitIndex);
         }
@@ -108,41 +107,60 @@ public final class TrieUtil {
         return suffix | (bitIndex << (27 - (curDepth * 5)));
     }
 
-    /*
-    mask &= ((1 << bitIndex) - 1);
-        mask -= ((mask >>> 1) & 0x55555555);
-        mask = (mask & 0x33333333) + ((mask >>> 2) & 0x33333333);
-        mask = (mask + (mask >>> 4)) & 0x0f0f0f0f;
-        mask += (mask >>> 8);
-        mask += (mask >>> 16);
-        return mask & 0x3f;
-     */
-
     /**
      * Computes the logical index for an item given the mask and bitIndex
      * @param mask the mask
      * @param bitIndex the bitIndex
      * @return the logical index
      */
-    public static int computeLogicalIndex(final int mask, final int bitIndex) {
+    static int computeLogicalIndex(final int mask, final int bitIndex) {
         return Integer.bitCount(mask & ((1 << bitIndex) - 1));
     }
 
-    public static void assertThat(final String msg, final boolean test) {
+    static void assertThat(final String msg, final boolean test) {
         if (!test) {
             throw new IllegalStateException("Assertion Failed: " + msg);
         }
     }
 
-    public static void assertEqual(final String msg, final int expected, int actual) {
-        if (expected != actual) {
-            throw new IllegalStateException("Assertion Failed: " + msg +
-                    "; expected=" + expected + " (" + toBinaryString(expected) +
-                    "), actual=" + actual + " (" + toBinaryString(actual) + ")");
+    static void assertNotNull(final String msg, final Object value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Assertion Failed: " + msg);
         }
     }
 
-    public static void assertValidType(final String baseMsg, final Object value, final boolean nullable, final Class<?>... validClasses) {
+    public static void assertNotSame(final String msg, final Object expected, Object actual) {
+        if (expected == actual) {
+            throw new IllegalStateException("Assertion Failed: " + msg +
+                    "; value=" + expected);
+        }
+    }
+
+    public static void assertSame(final String msg, final Object expected, Object actual) {
+        if (expected != actual) {
+            throw new IllegalStateException("Assertion Failed: " + msg +
+                    "; expected=" + expected +
+                    "), actual=" + actual);
+        }
+    }
+
+    public static void assertEqual(final String msg, final Object expected, Object actual) {
+        if (!Objects.equals(expected, actual)) {
+            throw new IllegalStateException("Assertion Failed: " + msg +
+                    "; expected=" + expected +
+                    ", actual=" + actual);
+        }
+    }
+
+    public static void assertEqualBinary(final String msg, final int expected, int actual) {
+        if (expected != actual) {
+            throw new IllegalStateException("Assertion Failed: " + msg +
+                    "; expected=" + toBinaryString(expected) +
+                    " actual=" + toBinaryString(actual));
+        }
+    }
+
+    static void assertValidType(final String baseMsg, final Object value, final boolean nullable, final Class<?>... validClasses) {
         if (value == null) {
             if (!nullable) {
                 throw new IllegalStateException(baseMsg + " cannot be null");
@@ -157,16 +175,16 @@ public final class TrieUtil {
         throw new IllegalStateException(baseMsg + " cannot be an instance of " + value.getClass().getSimpleName());
     }
 
-    public static void printIndent(final StringBuilder sb, int i) {
+    static void writeIndent(final Writer writer, int i) throws IOException{
         if (i > 256) {
-            sb.append(INDENT, 0, INDENT.length);
-            printIndent(sb, i - 256);
+            writer.write(INDENT, 0, INDENT.length);
+            writeIndent(writer, i - 256);
         } else {
-            sb.append(INDENT, 0, i * 4);
+            writer.write(INDENT, 0, i * 4);
         }
     }
 
-    public static String toBinaryString(int i) {
+    static String toBinaryString(int i) {
         String str = Integer.toBinaryString(i);
         if (str.length() < 32) {
             str = new String(ZEROS, 0, 32 - str.length()) + str;
@@ -174,18 +192,18 @@ public final class TrieUtil {
         return str + 'b';
     }
 
-    public static boolean checkIsAlongTrail(List<?> trail, Object obj) {
-        if (trail == null) {
+    static boolean checkIsAlongPath(List<?> path, Object obj) {
+        if (path == null) {
             return true;
         }
-        if (!trail.isEmpty() && trail.get(0) == obj) {
-            trail.remove(0);
+        if (!path.isEmpty() && path.get(0) == obj) {
+            path.remove(0);
             return true;
         }
         return false;
     }
 
-    public static void printIntBitsHighlight(StringBuilder sb, int i, int start, int length, int trimLen) {
+    static void writeBitsWithHighlight(Writer writer, int i, int start, int length, int trimLen) throws IOException {
         String str = Integer.toBinaryString(i);
         if (str.length() < trimLen) {
             str = new String(ZEROS, 0, trimLen - str.length()) + str;
@@ -193,32 +211,24 @@ public final class TrieUtil {
             str = str.substring(0, trimLen);
         }
         if (start > 0) {
-            sb.append(str, 0, start);
+            writer.write(str, 0, start);
         } else if (start < 0) {
-            sb.append(str);
+            writer.write(str);
             return;
         }
         if (start + length <= trimLen) {
-            sb.append('(');
-            sb.append(str, start, start + length);
-            sb.append(')');
+            writer.write('(');
+            writer.write(str, start, length);
+            writer.write(')');
         }
 
         if (start + length < trimLen) {
-            sb.append(str, start + length, trimLen);
+            writer.write(str, start + length, trimLen - start - length);
         }
 
-        sb.append('b');
+        writer.write('b');
     }
 
-    public static <K, V> Function<K, V> functionThatReturns(final V value) {
-        return (K key) -> value;
-    }
-
-    public static <K, V> BiFunction<K, V, V> functionThatReturnsIfMatchOrParam(final V matchValue, final V returnVal) {
-        return (K key, V value) -> Objects.equals(value, matchValue) ? returnVal : value;
-    }
-
-    private TrieUtil() { throw new UnsupportedOperationException(); }
+    private Util() { throw new UnsupportedOperationException(); }
 
 }

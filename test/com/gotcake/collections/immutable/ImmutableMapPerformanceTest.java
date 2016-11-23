@@ -12,7 +12,7 @@ import java.util.TreeMap;
  * A set of micro-benchmarks for ImmutableTrieMap vs other types of maps
  * @author Aaron Cake (gotcake)
  */
-public class ImmutableTrieMapPerformanceTest {
+public class ImmutableMapPerformanceTest {
 
     private static final String[] KEYS = new String[2000000];
     private static final String[] KEYS_SMALL = new String[100];
@@ -39,7 +39,7 @@ public class ImmutableTrieMapPerformanceTest {
 
     @Test
     public void testTrieMap() {
-        ImmutableTrieMap<String, Integer> map = ImmutableTrieMap.of();
+        ImmutableMap<String, Integer> map = ImmutableMap.of();
         long time = System.nanoTime();
         for (int i = 0; i < KEYS.length; i++) {
             map = map.set(KEYS[i], i);
@@ -85,9 +85,9 @@ public class ImmutableTrieMapPerformanceTest {
     @Test
     public void testTrieMapSmall() {
         long elapsed = 0;
-        ImmutableTrieMap<String, Integer> map = ImmutableTrieMap.of();
+        ImmutableMap<String, Integer> map = ImmutableMap.of();
         for (int j = 0; j < 10000; j++) {
-            map = ImmutableTrieMap.of();
+            map = ImmutableMap.of();
             long time = System.nanoTime();
             for (int i = 0; i < KEYS_SMALL.length; i++) {
                 map = map.set(KEYS_SMALL[i], i);

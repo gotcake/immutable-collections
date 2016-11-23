@@ -8,32 +8,30 @@ import java.util.function.Predicate;
 /**
  * @author Aaron Cake (acake)
  */
-abstract class ImmutableCollection<T, SelfType extends ImmutableCollection<T, SelfType>> implements Collection<T> {
+public interface ImmutableCollection<T> extends Collection<T> {
 
     @Override
-    public Object[] toArray() {
+    default Object[] toArray() {
         return Iterators.toObjectArray(size(), iterator());
     }
 
     @Override
-    public <T> T[] toArray(T[] a) {
-        // TODO: throw ArrayStoreException:
-        // if the runtime type of the specified array is not a supertype of the runtime type of every element in this set
-        return Iterators.toArray(size(), iterator(), a);
+    default <A> A[] toArray(A[] a) {
+        return Iterators.toArrayTypeChecked(size(), iterator(), a);
     }
 
     @Override
-    public boolean add(T item) {
+    default boolean add(T item) {
         throw new UnsupportedOperationException("add is not supported");
     }
 
     @Override
-    public boolean remove(Object o) {
+    default boolean remove(Object o) {
         throw new UnsupportedOperationException("remove is not supported");
     }
 
     @Override
-    public boolean containsAll(Collection<?> c) {
+    default boolean containsAll(Collection<?> c) {
         for (Object o: c) {
             if (!contains(o)) {
                 return false;
@@ -43,32 +41,32 @@ abstract class ImmutableCollection<T, SelfType extends ImmutableCollection<T, Se
     }
 
     @Override
-    public boolean addAll(Collection<? extends T> c) {
+    default boolean addAll(Collection<? extends T> c) {
         throw new UnsupportedOperationException("addAll is not supported");
     }
 
     @Override
-    public boolean retainAll(Collection<?> c) {
+    default boolean retainAll(Collection<?> c) {
         throw new UnsupportedOperationException("retainAll is not supported");
     }
 
     @Override
-    public boolean removeAll(Collection<?> c) {
+    default boolean removeAll(Collection<?> c) {
         throw new UnsupportedOperationException("removeAll is not supported");
     }
 
     @Override
-    public boolean removeIf(Predicate<? super T> filter) {
+    default boolean removeIf(Predicate<? super T> filter) {
         throw new UnsupportedOperationException("removeIf is not supported");
     }
 
     @Override
-    public void clear() {
+    default void clear() {
         throw new UnsupportedOperationException("clear is not supported");
     }
 
     @Override
-    public Spliterator<T> spliterator() {
+    default Spliterator<T> spliterator() {
         return Spliterators.spliterator(iterator(), size(),
                 Spliterator.IMMUTABLE | Spliterator.SIZED | Spliterator.CONCURRENT);
     }

@@ -6,11 +6,11 @@ import java.util.function.Consumer;
 /**
  * @author Aaron Cake (gotcake)
  */
-class ImmutableMapKeySet<T> extends ImmutableSet<T, ImmutableMapKeySet<T>> {
+class ImmutableMapKeySet<T> implements ImmutableSet<T> {
 
-    private final ImmutableMap<T, ?, ?> map;
+    private final ImmutableMap<T, ?> map;
 
-    ImmutableMapKeySet(ImmutableMap<T, ?, ?> map) {
+    ImmutableMapKeySet(ImmutableMap<T, ?> map) {
         this.map = map;
     }
 

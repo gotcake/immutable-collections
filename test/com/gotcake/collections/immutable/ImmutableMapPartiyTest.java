@@ -5,37 +5,35 @@ import org.junit.Test;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * A very useful test that checks for parity with HashMap with 1 million entries.
  * This bad boy tends to catch most errors other unit tests miss.
  * @author Aaron Cake (gotcake)
  */
-public class ImmutableTrieMapPartiyTest {
+public class ImmutableMapPartiyTest {
 
     @Test
     public void testMassiveParityWithHashMap() throws Exception {
         final Random random = new Random(0x1024572);
-        ImmutableTrieMap<String, Integer> map = ImmutableTrieMap.of();
+        ImmutableMap<String, Integer> map = ImmutableMap.of();
         final HashMap<String, Integer> hashMap = new HashMap<>();
         final StringBuilder buffer = new StringBuilder(102);
         for (int i = 0; i < 2000000; i++) {
             final String key = TestHelper.generateRandomString(buffer, random);
             final int value = (int)(random.nextFloat() * 1000000);
-            final ImmutableTrieMap<String, Integer> temp = map.set(key, value);
+            final ImmutableMap<String, Integer> temp = map.set(key, value);
             if (!hashMap.containsKey(key)) {
                 if (temp == map) {
-                    temp.assertValid();
+                    Validatable.tryAssertValid(map);
                     assertNotSame("ImmutableTrieMap must return new instance when adding a new key", temp, map);
                 }
             }
             hashMap.put(key, value);
             map = temp;
         }
-        map.assertValid();
-        System.out.println(map.computeDebugInfo());
+        Validatable.tryAssertValid(map);
+        DebugPrintable.tryPrintDebug(map);
         assertEquals(hashMap.size(), map.size());
         final HashSet<String> keysToRemove = new HashSet<>();
         for (final Map.Entry<String, Integer> entry: hashMap.entrySet()) {
@@ -52,23 +50,23 @@ public class ImmutableTrieMapPartiyTest {
             }
         }
         for (final String key: keysToRemove) {
-            assertNotNull("[Meta] Sanity check that we can remove key from hash map", hashMap.remove(key));
-            final ImmutableTrieMap<String, Integer> temp = map.delete(key);
+            assertNotNull("[Meta] Sanity check that we can remove key from hash internal", hashMap.remove(key));
+            final ImmutableMap<String, Integer> temp = map.delete(key);
             if (map == temp) {
-                temp.assertValid();
+                Validatable.tryAssertValid(map);
                 assertNotSame("ImmutableTrieMap must return new instance when removing an existing key", temp, map);
             }
             map = temp;
         }
         final Set<String> keySet = new HashSet<>(hashMap.keySet());
-        final Iterator<ImmutableTrieMap.Entry<String, Integer>> it = map.entryIterator();
+        final Iterator<ImmutableMap.Entry<String, Integer>> it = map.entryIterator();
         while (it.hasNext()) {
-            final ImmutableTrieMap.Entry<String, Integer> entry = it.next();
+            final ImmutableMap.Entry<String, Integer> entry = it.next();
             assertTrue("Iterator must iterate over existing keys only once", keySet.remove(entry.key));
             assertEquals("Iterator Entries must  have correct value", hashMap.get(entry.key), entry.value);
         }
-        map.assertValid();
-        System.out.println(map.computeDebugInfo());
+        Validatable.tryAssertValid(map);
+        DebugPrintable.tryPrintDebug(map);
         assertEquals(hashMap.size(), map.size());
         for (final Map.Entry<String, Integer> entry: hashMap.entrySet()) {
             final String key = entry.getKey();

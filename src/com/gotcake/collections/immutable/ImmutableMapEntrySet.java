@@ -6,11 +6,11 @@ import java.util.Map;
 /**
  * @author Aaron Cake (gotcake)
  */
-public class ImmutableMapEntrySet<K, V> extends ImmutableSet<Map.Entry<K, V>, ImmutableMapEntrySet<K, V>> {
+class ImmutableMapEntrySet<K, V> implements ImmutableSet<Map.Entry<K, V>> {
 
-    private final ImmutableMap<K, V, ?> map;
+    private final ImmutableMap<K, V> map;
 
-    public ImmutableMapEntrySet(ImmutableMap<K, V, ?> map) {
+    ImmutableMapEntrySet(ImmutableMap<K, V> map) {
         this.map = map;
     }
 
