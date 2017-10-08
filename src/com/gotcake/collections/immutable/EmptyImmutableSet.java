@@ -33,7 +33,7 @@ final class EmptyImmutableSet<T> implements ImmutableSet<T> {
     }
 
     @Override
-    public boolean contains(Object o) {
+    public boolean contains(final Object o) {
         return false;
     }
 
@@ -43,7 +43,7 @@ final class EmptyImmutableSet<T> implements ImmutableSet<T> {
     }
 
     @Override
-    public void forEach(Consumer<? super T> action) {
+    public void forEach(final Consumer<? super T> action) {
         // do nothing
     }
 
@@ -63,17 +63,17 @@ final class EmptyImmutableSet<T> implements ImmutableSet<T> {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         return obj == this || (obj instanceof Set && ((Set)obj).isEmpty());
     }
 
     @Override
-    public ImmutableSet<T> insert(T element) {
-        return new SingletonImmutableSet<>(element);
+    public ImmutableSet<T> insert(final T element) {
+        return ImmutableSet.of(element);
     }
 
     @Override
-    public ImmutableSet<T> delete(T element) {
+    public ImmutableSet<T> delete(final T element) {
         return this;
     }
 
@@ -84,7 +84,7 @@ final class EmptyImmutableSet<T> implements ImmutableSet<T> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T1> T1[] toArray(T1[] a) {
+    public <T1> T1[] toArray(final T1[] a) {
         return a.length == 0 ? a : (T1[]) Array.newInstance(a.getClass().getComponentType(), 0);
     }
 

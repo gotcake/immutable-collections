@@ -22,11 +22,11 @@ public class ImmutableMapPerformanceTest {
         final StringBuilder buffer = new StringBuilder(102);
         final Random random = new Random(231435363);
         for (int i = 0; i < KEYS.length; i++) {
-            TestHelper.generateRandomString(buffer, random);
+            TestHelper.generateRandomString(buffer, random, 102);
             KEYS[i] = buffer.toString();
         }
         for (int i = 0; i < KEYS_SMALL.length; i++) {
-            TestHelper.generateRandomString(buffer, random);
+            TestHelper.generateRandomString(buffer, random, 102);
             KEYS_SMALL[i] = buffer.toString();
         }
     }

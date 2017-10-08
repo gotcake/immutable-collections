@@ -16,7 +16,7 @@ public interface ImmutableCollection<T> extends Collection<T> {
     }
 
     @Override
-    default <A> A[] toArray(A[] a) {
+    default <A> A[] toArray(final A[] a) {
         return Iterators.toArrayTypeChecked(size(), iterator(), a);
     }
 
@@ -68,6 +68,6 @@ public interface ImmutableCollection<T> extends Collection<T> {
     @Override
     default Spliterator<T> spliterator() {
         return Spliterators.spliterator(iterator(), size(),
-                Spliterator.IMMUTABLE | Spliterator.SIZED | Spliterator.CONCURRENT);
+                Spliterator.IMMUTABLE | Spliterator.SIZED);
     }
 }

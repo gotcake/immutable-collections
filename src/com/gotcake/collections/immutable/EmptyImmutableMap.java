@@ -21,7 +21,7 @@ final class EmptyImmutableMap<K, V> implements ImmutableMap<K, V> {
     private EmptyImmutableMap() { }
 
     @Override
-    public boolean containsEntry(K key, V value) {
+    public boolean containsEntry(final K key, final V value) {
         return false;
     }
 
@@ -41,29 +41,29 @@ final class EmptyImmutableMap<K, V> implements ImmutableMap<K, V> {
     }
 
     @Override
-    public void forEachKey(Consumer<? super K> action) {
+    public void forEachKey(final Consumer<? super K> action) {
         // do nothing
     }
 
     @Override
-    public void forEachValue(Consumer<? super V> action) {
+    public void forEachValue(final Consumer<? super V> action) {
         // do nothing
     }
 
     @Override
-    public ImmutableMap<K, V> update(K key, BiFunction<? super K, ? super V, ? extends V> mapperFn) {
+    public ImmutableMap<K, V> update(final K key, final BiFunction<? super K, ? super V, ? extends V> mapperFn) {
         if (key == null) throw new NullPointerException("key cannot be null");
         final V value = mapperFn.apply(key, null);
         return value == null ? this : ImmutableMap.of(key, value);
     }
 
     @Override
-    public ImmutableMap<K, V> updateIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> mapperFn) {
+    public ImmutableMap<K, V> updateIfPresent(final K key, final BiFunction<? super K, ? super V, ? extends V> mapperFn) {
         return this;
     }
 
     @Override
-    public ImmutableMap<K, V> updateIfAbsent(K key, Function<? super K, ? extends V> computeFn) {
+    public ImmutableMap<K, V> updateIfAbsent(final K key, final Function<? super K, ? extends V> computeFn) {
         final V value = computeFn.apply(key);
         return value == null ? this : ImmutableMap.of(key, value);
     }
@@ -79,27 +79,27 @@ final class EmptyImmutableMap<K, V> implements ImmutableMap<K, V> {
     }
 
     @Override
-    public boolean containsKey(Object key) {
+    public boolean containsKey(final Object key) {
         return false;
     }
 
     @Override
-    public boolean containsValue(Object value) {
+    public boolean containsValue(final Object value) {
         return false;
     }
 
     @Override
-    public V get(Object key) {
+    public V get(final Object key) {
         return null;
     }
 
     @Override
-    public V getOrDefault(Object key, V defaultValue) {
+    public V getOrDefault(final Object key, final V defaultValue) {
         return defaultValue;
     }
 
     @Override
-    public void forEach(BiConsumer<? super K, ? super V> action) {
+    public void forEach(final BiConsumer<? super K, ? super V> action) {
         // do nothing
     }
 
@@ -112,32 +112,32 @@ final class EmptyImmutableMap<K, V> implements ImmutableMap<K, V> {
     }
 
     @Override
-    public ImmutableMap<K, V> set(K key, V value) {
+    public ImmutableMap<K, V> set(final K key, final V value) {
         return ImmutableMap.of(key, value);
     }
 
     @Override
-    public ImmutableMap<K, V> setIfAbsent(K key, V value) {
+    public ImmutableMap<K, V> setIfAbsent(final K key, final V value) {
         return ImmutableMap.of(key, value);
     }
 
     @Override
-    public ImmutableMap<K, V> setIfPresent(K key, V value) {
+    public ImmutableMap<K, V> setIfPresent(final K key, final V value) {
         return this;
     }
 
     @Override
-    public ImmutableMap<K, V> setIfMatch(K key, V oldValue, V newValue) {
+    public ImmutableMap<K, V> setIfMatch(final K key, final V oldValue, final V newValue) {
         return this;
     }
 
     @Override
-    public ImmutableMap<K, V> delete(K key) {
+    public ImmutableMap<K, V> delete(final K key) {
         return this;
     }
 
     @Override
-    public ImmutableMap<K, V> deleteIfMatch(K key, V value) {
+    public ImmutableMap<K, V> deleteIfMatch(final K key, final V value) {
         return this;
     }
 
@@ -162,7 +162,7 @@ final class EmptyImmutableMap<K, V> implements ImmutableMap<K, V> {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         return obj == this || (obj instanceof Map && ((Map)obj).isEmpty());
     }
 

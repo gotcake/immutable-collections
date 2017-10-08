@@ -16,24 +16,27 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
     }
 
     static <K, V> ImmutableMap<K, V> of(K key, V value) {
-        if (key == null || value == null) throw new NullPointerException();
-        return new SingletonImmutableMap<>(key, value);
+        return new RegularImmutableTrieMap<>(key, value);
     }
 
     static <K, V> ImmutableMap<K, V> of(K key1, V value1, K key2, V value2) {
-        if (value1 == null || key2 == null || value2 == null) throw new NullPointerException();
-        if (key1.equals(key2)) {
-            return new SingletonImmutableMap<>(key1, value2);
-        }
         return new RegularImmutableTrieMap<>(key1, value1, key2, value2);
     }
 
+    static <K, V> ImmutableMap<K, V> of(K key1, V value1, K key2, V value2, K key3, V value3) {
+        return of(key1, value1, key2, value2).set(key3, value3);
+    }
+
+    /**
+     * A generic Entry class
+     * @author Aaron Cake
+     */
     class Entry<K, V> implements Map.Entry<K, V> {
 
         public final K key;
         public final V value;
 
-        public Entry(K key, V value) {
+        Entry(K key, V value) {
             this.key = key;
             this.value = value;
         }
@@ -67,17 +70,64 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
         public int hashCode() {
             return key.hashCode() ^ value.hashCode();
         }
+
     }
 
     boolean containsEntry(final K key, final V value);
-    Iterator<Entry<K, V>> entryIterator();
+    Iterator<ImmutableMap.Entry<K, V>> entryIterator();
     Iterator<K> keyIterator();
     Iterator<V> valueIterator();
     void forEachKey(Consumer<? super K> action);
     void forEachValue(Consumer<? super V> action);
+
+    /**
+     * Computes the a new internal with the given key and value returned by remapperFn.
+     * If computeFn returns the existing value,
+     * this internal is returned, no modifications are made, and no new instances are created.
+     * @param key the key
+     * @param mapperFn a function which maps the value
+     * @return the new internal instance, or the this instance if no modifications were necessary
+     * @throws NullPointerException if key and/or mapperFn is null
+     */
     ImmutableMap<K, V> update(final K key, final BiFunction<? super K, ? super V, ? extends V> mapperFn);
-    ImmutableMap<K, V> updateIfPresent(final K key, final BiFunction<? super K, ? super V, ? extends V> mapperFn);
-    ImmutableMap<K, V> updateIfAbsent(final K key, final Function<? super K, ? extends V> computeFn);
+
+    /**
+     * Computes the a new internal with the given key and value returned by remapperFn only if there is already a value for the given key.
+     * If this internal doesn't contain the given key, mapperFn is never called.
+     * If this internal doesn't contain the given key or remapperFn returns the existing value,
+     * this internal is returned, no modifications are made, and no new instances are created.
+     * @param key the key
+     * @param mapperFn a function which maps the value
+     * @return the new internal instance, or the this instance if no modifications were necessary
+     * @throws NullPointerException if key and/or computeFn is null
+     */
+    default ImmutableMap<K, V> updateIfPresent(final K key, final BiFunction<? super K, ? super V, ? extends V> mapperFn) {
+        return update(key, (theKey, value) -> {
+            if (value != null) {
+                return mapperFn.apply(theKey, value);
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Computes the a new internal with the given key and value returned by computeFn only if there is no value for the given key.
+     * If this internal already contains the given key, computeFn is never called.
+     * If this internal already contains the given key or computeFn returns null,
+     * this internal is returned, no modifications are made, and no new instances are created.
+     * @param key the key
+     * @param computeFn a function which computes the value
+     * @return the new internal instance, or the this instance if no modifications were necessary
+     * @throws NullPointerException if key and/or computeFn is null
+     */
+    default ImmutableMap<K, V> updateIfAbsent(final K key, final Function<? super K, ? extends V> computeFn) {
+        return update(key, (theKey, value) -> {
+            if (value == null) {
+                return computeFn.apply(theKey);
+            }
+            return value;
+        });
+    }
 
     /**
      * Computes the a new internal with the given key-value pair.
@@ -88,10 +138,7 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
      * @return the new internal instance, or the this instance if no modifications were necessary
      * @throws NullPointerException if key and/or value are null
      */
-    default ImmutableMap<K, V> set(final K key, final V value) {
-        Objects.requireNonNull(value, "value cannot be null");
-        return update(key, (K k, V v) -> value);
-    }
+    ImmutableMap<K, V> set(final K key, final V value);
 
 
     /**
@@ -103,10 +150,7 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
      * @return the new internal instance, or the this instance if no modifications were necessary
      * @throws NullPointerException if key and/or value are null
      */
-    default ImmutableMap<K, V> setIfAbsent(final K key, final V value) {
-        Objects.requireNonNull(value, "value cannot be null");
-        return updateIfAbsent(key, (K k) -> value);
-    }
+    ImmutableMap<K, V> setIfAbsent(final K key, final V value);
 
 
     /**
@@ -118,10 +162,7 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
      * @return the new internal instance, or the this instance if no modifications were necessary
      * @throws NullPointerException if key and/or value are null
      */
-    default ImmutableMap<K, V> setIfPresent(final K key, final V value) {
-        Objects.requireNonNull(value, "value cannot be null");
-        return updateIfPresent(key, (K k, V v) -> value);
-    }
+    ImmutableMap<K, V> setIfPresent(final K key, final V value);
 
 
     /**
@@ -129,18 +170,23 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
      * If this internal already contains the given key-value pair or the given key is missing or has a value not equal to oldValue,
      * this internal is returned, no modifications are made, and no new instances are created.
      * @param key the key
-     * @param oldValue oldValue the value to match
+     * @param matchValue the value to match
      * @param newValue the value to set if the current value equals oldValue
      * @return the new internal instance, or the this instance if no modifications were necessary
      * @throws NullPointerException if key and/or newValue are null
      */
     @SuppressWarnings("unchecked")
-    default ImmutableMap<K, V> setIfMatch(final K key, final V oldValue, final V newValue) {
-        Objects.requireNonNull(newValue, "newValue cannot be null");
-        if (oldValue == null || oldValue.equals(newValue)) {
+    default ImmutableMap<K, V> setIfMatch(final K key, final V matchValue, final V newValue) {
+        if (newValue == null) { throw new NullPointerException(); }
+        if (matchValue == null || matchValue.equals(newValue)) {
             return this;
         }
-        return updateIfPresent(key, (K k, V existing) -> existing.equals(oldValue) ? newValue : oldValue);
+        return update(key, (theKey, value) -> {
+            if (value.equals(matchValue)) {
+                return newValue;
+            }
+            return value;
+        });
     }
 
     /**
@@ -149,27 +195,26 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
      * @param key the key
      * @return the new internal, or this object if no modification was required
      */
-    @SuppressWarnings("unchecked")
-    default ImmutableMap<K, V> delete(final K key) {
-        if (key == null) {
-            return this;
-        }
-        return updateIfPresent(key, (K k, V v) -> null);
-    }
+    ImmutableMap<K, V> delete(final K key);
 
     /**
      * Deletes an entry only if it matches the given key and value.
      * If a modification is required, a new internal is returned, otherwise this object is returned.
      * @param key the key
-     * @param value the value
+     * @param matchValue the value
      * @return the new internal, or this object if no modification was required
      */
     @SuppressWarnings("unchecked")
-    default ImmutableMap<K, V> deleteIfMatch(final K key, final V value) {
-        if (key == null || value == null) {
+    default ImmutableMap<K, V> deleteIfMatch(final K key, final V matchValue) {
+        if (matchValue == null) {
             return this;
         }
-        return updateIfPresent(key, (K k, V existing) -> existing.equals(value) ? null : existing);
+        return update(key, (theKey, value) -> {
+            if (value.equals(matchValue)) {
+                return null;
+            }
+            return value;
+        });
     }
 
     @Override
@@ -271,7 +316,7 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
      */
     default Spliterator<K> keySpliterator() {
         return Spliterators.spliterator(keyIterator(), size(),
-                Spliterator.IMMUTABLE | Spliterator.CONCURRENT | Spliterator.DISTINCT | Spliterator.SIZED);
+                Spliterator.IMMUTABLE | Spliterator.DISTINCT | Spliterator.SIZED);
     }
 
     /**
@@ -280,7 +325,7 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
      */
     default Spliterator<V> valueSpliterator() {
         return Spliterators.spliterator(valueIterator(), size(),
-                Spliterator.IMMUTABLE | Spliterator.CONCURRENT | Spliterator.SIZED);
+                Spliterator.IMMUTABLE | Spliterator.SIZED);
     }
 
 }

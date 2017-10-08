@@ -8,7 +8,7 @@ import java.util.*;
  * Just some utilities
  * @author Aaron Cake
  */
-final class Util {
+public final class Util {
 
     private static final int C1 = 0xcc9e2d51;
     private static final int C2 = 0x1b873593;
@@ -30,7 +30,7 @@ final class Util {
      * @param obj the object to hash
      * @return the smeared hash
      */
-    static int computeSmearHash(final Object obj) {
+    public static int computeSmearHash(final Object obj) {
         final int a = obj.hashCode() * C1;
         return C2 * ((a << 15) | (a >>> 17));
     }
@@ -41,11 +41,39 @@ final class Util {
      * @param depth the current tree depth
      * @return the hash prefix for the object and current tree depth
      */
-    static int computeHashPrefix(final Object obj, final int depth) {
+    public static int computeHashPrefix(final Object obj, final int depth) {
         if (DEBUG && (depth < 0 || depth > 6)) {
             throw new IllegalArgumentException("Invalid depth " + depth + ". Must be in range [0, 6]");
         }
         return computeSmearHash(obj) << (5 * depth);
+    }
+
+    /**
+     * Computes the hash suffix of an object after a certain depth of traversal
+     * @param obj the object to contains the hash prefix of
+     * @param depth the current tree depth
+     * @return the hash prefix for the object and current tree depth
+     */
+    static int computeUsefulHashBits(final Object obj, final int depth) {
+        final int hash = computeSmearHash(obj);
+        switch (depth) {
+            case 0:
+                return hash & 0b11111;
+            case 1:
+                return hash & 0b1111111111;
+            case 2:
+                return hash & 0b111111111111111;
+            case 3:
+                return hash & 0b11111111111111111111;
+            case 4:
+                return hash & 0b1111111111111111111111111;
+            case 5:
+                return hash & 0b111111111111111111111111111111;
+            case 6:
+                return hash;
+            default:
+                throw new IllegalArgumentException("Invalid depth " + depth + ". Must be in range [0, 6]");
+        }
     }
 
     /**
@@ -94,7 +122,7 @@ final class Util {
      * @param bitIndex the bit index of the child
      * @return the child's hash suffix
      */
-    static int computeChildHashSuffix(final int suffix, final int bitIndex, int curDepth) {
+    public static int computeChildHashSuffix(final int suffix, final int bitIndex, int curDepth) {
         if (bitIndex < 0 || bitIndex > 31) {
             throw new IndexOutOfBoundsException("Invalid bit index " + bitIndex);
         }
@@ -113,7 +141,7 @@ final class Util {
      * @param bitIndex the bitIndex
      * @return the logical index
      */
-    static int computeLogicalIndex(final int mask, final int bitIndex) {
+    public static int computeLogicalIndex(final int mask, final int bitIndex) {
         return Integer.bitCount(mask & ((1 << bitIndex) - 1));
     }
 
@@ -189,7 +217,10 @@ final class Util {
         if (str.length() < 32) {
             str = new String(ZEROS, 0, 32 - str.length()) + str;
         }
-        return str + 'b';
+        return str.substring(0, 8) + '_' +
+                str.substring(9, 16) + '_' +
+                str.substring(17, 24) + '_' +
+                str.substring(25) + 'b';
     }
 
     static boolean checkIsAlongPath(List<?> path, Object obj) {

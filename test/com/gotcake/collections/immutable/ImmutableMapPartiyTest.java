@@ -2,6 +2,10 @@ package com.gotcake.collections.immutable;
 
 import org.junit.Test;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -20,20 +24,20 @@ public class ImmutableMapPartiyTest {
         final HashMap<String, Integer> hashMap = new HashMap<>();
         final StringBuilder buffer = new StringBuilder(102);
         for (int i = 0; i < 2000000; i++) {
-            final String key = TestHelper.generateRandomString(buffer, random);
+            final String key = TestHelper.generateRandomString(buffer, random, 102);
             final int value = (int)(random.nextFloat() * 1000000);
             final ImmutableMap<String, Integer> temp = map.set(key, value);
             if (!hashMap.containsKey(key)) {
                 if (temp == map) {
-                    Validatable.tryAssertValid(map);
+                    //Validatable.tryAssertValid(map);
                     assertNotSame("ImmutableTrieMap must return new instance when adding a new key", temp, map);
                 }
             }
             hashMap.put(key, value);
             map = temp;
         }
-        Validatable.tryAssertValid(map);
-        DebugPrintable.tryPrintDebug(map);
+        //Validatable.tryAssertValid(map);
+        //DebugPrintable.tryPrintDebug(map);
         assertEquals(hashMap.size(), map.size());
         final HashSet<String> keysToRemove = new HashSet<>();
         for (final Map.Entry<String, Integer> entry: hashMap.entrySet()) {
@@ -53,7 +57,7 @@ public class ImmutableMapPartiyTest {
             assertNotNull("[Meta] Sanity check that we can remove key from hash internal", hashMap.remove(key));
             final ImmutableMap<String, Integer> temp = map.delete(key);
             if (map == temp) {
-                Validatable.tryAssertValid(map);
+                //Validatable.tryAssertValid(map);
                 assertNotSame("ImmutableTrieMap must return new instance when removing an existing key", temp, map);
             }
             map = temp;
@@ -65,8 +69,8 @@ public class ImmutableMapPartiyTest {
             assertTrue("Iterator must iterate over existing keys only once", keySet.remove(entry.key));
             assertEquals("Iterator Entries must  have correct value", hashMap.get(entry.key), entry.value);
         }
-        Validatable.tryAssertValid(map);
-        DebugPrintable.tryPrintDebug(map);
+        //Validatable.tryAssertValid(map);
+        //DebugPrintable.tryPrintDebug(map);
         assertEquals(hashMap.size(), map.size());
         for (final Map.Entry<String, Integer> entry: hashMap.entrySet()) {
             final String key = entry.getKey();
@@ -87,6 +91,65 @@ public class ImmutableMapPartiyTest {
         );
         assertTrue("forEachKey must iterate over all keys", keySet.isEmpty());
 
+    }
+
+    @Test
+    public void testParity1() throws Exception {
+        runParityTest("test/resources/parity_test_data_1.txt", ImmutableMap.of(), new HashMap<>());
+    }
+
+    @Test
+    public void testParity2() throws Exception {
+        runParityTest("test/resources/parity_test_data_2.txt", ImmutableMap.of(), new HashMap<>());
+    }
+
+    @Test
+    public void testParity3() throws Exception {
+        runParityTest("test/resources/parity_test_data_3.txt", ImmutableMap.of(), new HashMap<>());
+    }
+
+    private static void runParityTest(final String file, ImmutableMap<String, String> map, final Map<String, String> reference) throws IOException {
+        try (final BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line, key, val;
+            ImmutableMap<String, String> tmp;
+            while ((line = reader.readLine()) != null) {
+                final String trimmed = line.trim();
+                if (trimmed.isEmpty()) {
+                    continue;
+                }
+                final String[] parts = trimmed.split("\\s+");
+                if (parts.length == 0) {
+                    continue;
+                }
+                switch (parts[0]) {
+                    case "c":
+                        Validatable.tryAssertValid("test", map);
+                        assertTrue(map.equals(reference));
+                        break;
+                    case "r":
+                        key = parts[1];
+                        tmp = map.delete(key);
+                        if (reference.remove(key) == null) {
+                            assertSame(map, tmp);
+                        } else {
+                            assertNotSame(map, tmp);
+                            map = tmp;
+                        }
+                        break;
+                    case "p":
+                        key = parts[1];
+                        val = parts[2];
+                        tmp = map.set(key, val);
+                        if (val.equals(reference.put(key, val))) {
+                            assertSame(map, tmp);
+                        } else {
+                            assertNotSame(map, tmp);
+                            map = tmp;
+                        }
+                        break;
+                }
+            }
+        }
     }
 
 }

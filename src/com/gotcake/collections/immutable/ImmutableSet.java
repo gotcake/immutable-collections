@@ -13,30 +13,32 @@ public interface ImmutableSet<T> extends ImmutableCollection<T>, Set<T> {
         return EmptyImmutableSet.getInstance();
     }
 
-    static <T> ImmutableSet<T> of(T element) {
+    static <T> ImmutableSet<T> of(final T element) {
         if (element == null) throw new NullPointerException();
-        return new SingletonImmutableSet<>(element);
+        return new MapBackedImmutableTrieSet<>(element);
     }
 
-    static <T> ImmutableSet<T> of(T element1, T element2) {
-        if (element2 == null) throw new NullPointerException();
-        if (element1.equals(element2)) {
-            return new SingletonImmutableSet<>(element1);
-        }
+    static <T> ImmutableSet<T> of(final T element1, final T element2) {
         return new MapBackedImmutableTrieSet<>(element1, element2);
     }
 
     @SafeVarargs
-    static <T> ImmutableSet<T> of(T... elements) {
-        ImmutableMap<T, Boolean> map = EmptyImmutableMap.getInstance();
-        for (T element: elements) {
-            map = map.set(element, Boolean.TRUE);
+    static <T> ImmutableSet<T> of(final T... elements) {
+        switch (elements.length) {
+            case 0:
+                return EmptyImmutableSet.getInstance();
+            case 1:
+                return of(elements[0]);
+        }
+        ImmutableMap<T, Boolean> map = ImmutableMap.of(elements[0], Boolean.TRUE, elements[1], Boolean.TRUE);
+        for (int i = 2; i < elements.length; i++) {
+            map = map.set(elements[i], Boolean.TRUE);
         }
         return new MapBackedImmutableTrieSet<>(map);
     }
 
-    ImmutableSet<T> insert(T element);
-    ImmutableSet<T> delete(T element);
+    ImmutableSet<T> insert(final T element);
+    ImmutableSet<T> delete(final T element);
 
     @Override
     default Object[] toArray() {
@@ -44,22 +46,22 @@ public interface ImmutableSet<T> extends ImmutableCollection<T>, Set<T> {
     }
 
     @Override
-    default <A> A[] toArray(A[] a) {
+    default <A> A[] toArray(final A[] a) {
         return Iterators.toArrayTypeChecked(size(), iterator(), a);
     }
 
     @Override
-    default boolean add(T item) {
+    default boolean add(final T item) {
         throw new UnsupportedOperationException("add is not supported");
     }
 
     @Override
-    default boolean remove(Object o) {
+    default boolean remove(final Object o) {
         throw new UnsupportedOperationException("remove is not supported");
     }
 
     @Override
-    default boolean containsAll(Collection<?> c) {
+    default boolean containsAll(final Collection<?> c) {
         for (Object o: c) {
             if (!contains(o)) {
                 return false;
@@ -69,22 +71,22 @@ public interface ImmutableSet<T> extends ImmutableCollection<T>, Set<T> {
     }
 
     @Override
-    default boolean addAll(Collection<? extends T> c) {
+    default boolean addAll(final Collection<? extends T> c) {
         throw new UnsupportedOperationException("addAll is not supported");
     }
 
     @Override
-    default boolean retainAll(Collection<?> c) {
+    default boolean retainAll(final Collection<?> c) {
         throw new UnsupportedOperationException("retainAll is not supported");
     }
 
     @Override
-    default boolean removeAll(Collection<?> c) {
+    default boolean removeAll(final Collection<?> c) {
         throw new UnsupportedOperationException("removeAll is not supported");
     }
 
     @Override
-    default boolean removeIf(Predicate<? super T> filter) {
+    default boolean removeIf(final Predicate<? super T> filter) {
         throw new UnsupportedOperationException("removeIf is not supported");
     }
 

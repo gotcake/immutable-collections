@@ -12,15 +12,19 @@ import static com.gotcake.collections.immutable.Util.assertValidType;
  * A simple ImmutableSet implementation backed by an ImmutableMap
  * @author Aaron Cake
  */
-final class MapBackedImmutableTrieSet<T> implements ImmutableSet<T>, Validatable {
+final class MapBackedImmutableTrieSet<T> implements ImmutableSet<T> {
 
     private final ImmutableMap<T, Boolean> map;
 
-    MapBackedImmutableTrieSet(ImmutableMap<T, Boolean> map) {
+    MapBackedImmutableTrieSet(final ImmutableMap<T, Boolean> map) {
         this.map = map;
     }
 
-    MapBackedImmutableTrieSet(T element1, T element2) {
+    MapBackedImmutableTrieSet(final T element) {
+        this.map = new RegularImmutableTrieMap<>(element, Boolean.TRUE);
+    }
+
+    MapBackedImmutableTrieSet(final T element1, final T element2) {
         this.map = new RegularImmutableTrieMap<>(element1, Boolean.TRUE, element2, Boolean.TRUE);
     }
 
@@ -35,7 +39,7 @@ final class MapBackedImmutableTrieSet<T> implements ImmutableSet<T>, Validatable
     }
 
     @Override
-    public boolean contains(Object o) {
+    public boolean contains(final Object o) {
         return map.containsKey(o);
     }
 
@@ -45,7 +49,7 @@ final class MapBackedImmutableTrieSet<T> implements ImmutableSet<T>, Validatable
     }
 
     @Override
-    public void forEach(Consumer<? super T> action) {
+    public void forEach(final Consumer<? super T> action) {
         map.forEachKey(action);
     }
 
@@ -55,17 +59,17 @@ final class MapBackedImmutableTrieSet<T> implements ImmutableSet<T>, Validatable
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (obj == this) return true;
         if (!(obj instanceof Set)) return false;
-        Set<?> other = (Set)obj;
+        final Set<?> other = (Set)obj;
         if (map.size() != other.size()) {
             return false;
         }
         if (obj instanceof MapBackedImmutableTrieSet) {
             return map.equals(((MapBackedImmutableTrieSet)obj).map);
         }
-        Iterator<T> it = map.keyIterator();
+        final Iterator<T> it = map.keyIterator();
         while (it.hasNext()) {
             if (!other.contains(it.next())) {
                 return false;
@@ -75,27 +79,22 @@ final class MapBackedImmutableTrieSet<T> implements ImmutableSet<T>, Validatable
     }
 
     @Override
-    public ImmutableSet<T> insert(T element) {
-        ImmutableMap<T, Boolean> newMap = map.set(element, Boolean.TRUE);
+    public ImmutableSet<T> insert(final T element) {
+        final ImmutableMap<T, Boolean> newMap = map.set(element, Boolean.TRUE);
         return newMap != map ? new MapBackedImmutableTrieSet<>(newMap) : this;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public ImmutableSet<T> delete(T element) {
-        ImmutableMap<T, Boolean> newMap = map.delete(element);
+    public ImmutableSet<T> delete(final T element) {
+        final ImmutableMap<T, Boolean> newMap = map.delete(element);
         if (newMap != map) {
-            if (newMap.size() == 1) {
-                return new SingletonImmutableSet<>(newMap.keyIterator().next());
+            if (newMap.size() == 0) {
+                return EmptyImmutableSet.getInstance();
             }
             return new MapBackedImmutableTrieSet<>(newMap);
         }
         return this;
     }
 
-    @Override
-    public void assertValid(Writer debugWriter) throws IOException {
-        assertValidType("map", map, false, RegularImmutableTrieMap.class);
-        ((Validatable)map).assertValid(debugWriter);
-    }
 }
