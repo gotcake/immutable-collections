@@ -1,12 +1,8 @@
 package com.gotcake.collections.immutable;
 
-import java.io.IOException;
-import java.io.Writer;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Consumer;
-
-import static com.gotcake.collections.immutable.Util.assertValidType;
 
 /**
  * A simple ImmutableSet implementation backed by an ImmutableMap

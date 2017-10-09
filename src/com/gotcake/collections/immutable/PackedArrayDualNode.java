@@ -12,8 +12,8 @@ import static com.gotcake.collections.immutable.Util.computeHashPrefix;
  */
 class PackedArrayDualNode<K, V> implements Node<K, V> {
 
-    private int mask;
-    private final Object[] packedArray;
+    int mask;
+    final Object[] packedArray;
 
     PackedArrayDualNode(final int bitIndex, final K key, final V value) {
         this.mask = 1 << bitIndex;
@@ -41,7 +41,6 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public V get(K key, int prefix) {
 
         final int bit = 1 << (prefix >>> 27);
@@ -52,16 +51,21 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
         }
 
         final int offset = Integer.bitCount(mask & (bit - 1)) * 2;
-        final Object keyOrNull = packedArray[offset];
+        @SuppressWarnings("unchecked")
+        final K keyOrNull = (K)packedArray[offset];
 
         if (keyOrNull == null) {
             // we have a child, descend further
-            return ((Node<K, V>)packedArray[offset + 1]).get(key, prefix << 5);
+            @SuppressWarnings("unchecked")
+            final Node<K, V> child = (Node<K, V>)packedArray[offset + 1];
+            return child.get(key, prefix << 5);
         }
 
         if (keyOrNull.equals(key)) {
             // key matches, return value
-            return (V)packedArray[offset + 1];
+            @SuppressWarnings("unchecked")
+            final V value = (V)packedArray[offset + 1];
+            return value;
         }
 
         // key does not match, return null
@@ -70,7 +74,6 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Node<K, V> set(K key, V value, int prefix, int depth, SizeChangeSink size) {
 
         final int bit = 1 << (prefix >>> 27);
@@ -79,18 +82,21 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
         if ((bit & mask) == 0) {
             // bit not set, branch does not exist, insert entry
             size.sizeChange++;
-            return insertEntry(bit, offset, key, value);
+            return nodeByInsertingAtOffset(bit, offset, key, value);
         }
 
-        final Object keyOrNull = packedArray[offset];
+        @SuppressWarnings("unchecked")
+        final K keyOrNull = (K)packedArray[offset];
 
         if (keyOrNull == null) {
             // we have a child, descend further
+            @SuppressWarnings("unchecked")
             final Node<K, V> child = (Node<K, V>)packedArray[offset + 1];
             final Node<K, V> newChild = child.set(key, value, prefix << 5, depth + 1, size);
             if (child != newChild) {
                 // child changed, replace child
-                return replaceEntry(offset, null, newChild);
+                return nodeByReplacingOffset(offset, null, newChild);
+
             }
             // child did not change, return this
             return this;
@@ -103,22 +109,24 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
                 return this;
             }
             // value doesn't match, replace it
-            return replaceEntry(offset, key, value);
+            return nodeByReplacingOffset(offset, key, value);
         }
 
         // key does not match, create new branch
         final int ourPrefix = computeHashPrefix(keyOrNull, depth);
+        @SuppressWarnings("unchecked")
+        final V ourValue = (V)packedArray[offset + 1];
         final Node<K, V> newNode = NodeFactory.createNodeWithTwoEntries(
+                depth + 1,
                 prefix << 5, key, value,
-                ourPrefix << 5, (K)keyOrNull, (V)packedArray[offset + 1]
+                ourPrefix << 5, keyOrNull, ourValue
         );
         size.sizeChange++;
-        return replaceEntry(offset, null, newNode);
+        return nodeByReplacingOffset(offset, null, newNode);
 
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Node<K, V> setIfExists(K key, V value, int prefix, int depth) {
 
         final int bit = 1 << (prefix >>> 27);
@@ -129,15 +137,17 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
             return this;
         }
 
-        final Object keyOrNull = packedArray[offset];
+        @SuppressWarnings("unchecked")
+        final K keyOrNull = (K)packedArray[offset];
 
         if (keyOrNull == null) {
             // we have a child, descend further
+            @SuppressWarnings("unchecked")
             final Node<K, V> child = (Node<K, V>)packedArray[offset + 1];
             final Node<K, V> newChild = child.setIfExists(key, value, prefix << 5, depth + 1);
             if (child != newChild) {
                 // child changed, replace child
-                return replaceEntry(offset, null, newChild);
+                return nodeByReplacingOffset(offset, null, newChild);
             }
             // child did not change, return this
             return this;
@@ -150,7 +160,7 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
                 return this;
             }
             // value doesn't match, replace it
-            return replaceEntry(offset, key, value);
+            return nodeByReplacingOffset(offset, key, value);
         }
 
         // key does not match, return this
@@ -167,7 +177,7 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
 
         if ((bit & mask) == 0) {
             // bit not set, branch does not exist, insert entry
-            return insertEntry(bit, offset, key, value);
+            return nodeByInsertingAtOffset(bit, offset, key, value);
         }
 
         final Object keyOrNull = packedArray[offset];
@@ -178,7 +188,7 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
             final Node<K, V> newChild = child.setIfNotExists(key, value, prefix << 5, depth + 1);
             if (child != newChild) {
                 // child changed, replace child
-                return replaceEntry(offset, null, newChild);
+                return nodeByReplacingOffset(offset, null, newChild);
             }
             // child did not change, return this
             return this;
@@ -192,16 +202,17 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
         // key does not match, create new branch
         final int ourPrefix = computeHashPrefix(keyOrNull, depth);
         final Node<K, V> newNode = NodeFactory.createNodeWithTwoEntries(
+                depth + 1,
                 prefix << 5, key, value,
                 ourPrefix << 5, (K)keyOrNull, (V)packedArray[offset + 1]
         );
-        return replaceEntry(offset, null, newNode);
+        return nodeByReplacingOffset(offset, null, newNode);
 
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public Node<K, V> delete(K key, int prefix) {
+    public Node<K, V> delete(K key, int prefix, int depth) {
 
         final int bit = 1 << (prefix >>> 27);
         final int offset = Integer.bitCount(mask & (bit - 1)) * 2;
@@ -216,16 +227,23 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
         if (keyOrNull == null) {
             // we have a child, descend further
             final Node<K, V> child = (Node<K, V>)packedArray[offset + 1];
-            final Node<K, V> newChild = child.delete(key, prefix << 5);
-
-            if (newChild == null) {
-                // child deleted, remove child
-                return NodeFactory.createNodeByRemovingOffsetFromPackedArray(mask, packedArray, bit, offset);
-            }
+            final Node<K, V> newChild = child.delete(key, prefix << 5, depth + 1);
 
             if (child != newChild) {
+
+                if (newChild == null) {
+                    // child deleted, remove child
+                    return nodeByRemovingOffset(offset, bit, depth);
+                }
+
+                if (newChild instanceof SingleEntryNode) {
+                    // collapse entry into this node
+                    final SingleEntryNode<K, V> entryToCollapse = (SingleEntryNode<K, V>)newChild;
+                    return nodeByReplacingOffset(offset, entryToCollapse.key, entryToCollapse.value);
+                }
+
                 // child changed, replace child
-                return replaceEntry(offset, null, newChild);
+                return nodeByReplacingOffset(offset, null, newChild);
             }
 
             // child did not change, return this
@@ -234,7 +252,7 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
 
         if (keyOrNull.equals(key)) {
             // key matches, remove entry
-            return NodeFactory.createNodeByRemovingOffsetFromPackedArray(mask, packedArray, bit, offset);
+            return nodeByRemovingOffset(offset, bit, depth);
         }
 
         // key does not match, return this
@@ -243,7 +261,6 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Node<K, V> update(K key, int prefix, int depth, BiFunction<? super K, ? super V, ? extends V> updateFn, SizeChangeSink size) {
 
         final int bit = 1 << (prefix >>> 27);
@@ -254,20 +271,34 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
             final V newValue = updateFn.apply(key, null);
             if (newValue != null) {
                 size.sizeChange++;
-                return insertEntry(bit, offset, key, newValue);
+                return nodeByInsertingAtOffset(bit, offset, key, newValue);
             }
             return this;
         }
 
-        final Object keyOrNull = packedArray[offset];
+        @SuppressWarnings("unchecked")
+        final K keyOrNull = (K)packedArray[offset];
 
         if (keyOrNull == null) {
             // we have a child, descend further
+            @SuppressWarnings("unchecked")
             final Node<K, V> child = (Node<K, V>)packedArray[offset + 1];
             final Node<K, V> newChild = child.update(key, prefix << 5, depth + 1, updateFn, size);
             if (child != newChild) {
+
+                if (newChild == null) {
+                    // child removed
+                    return nodeByRemovingOffset(offset, bit, depth);
+                }
+
+                if (newChild instanceof SingleEntryNode) {
+                    // collapse entry into this node
+                    final SingleEntryNode<K, V> entryToCollapse = (SingleEntryNode<K, V>)newChild;
+                    return nodeByReplacingOffset(offset, entryToCollapse.key, entryToCollapse.value);
+                }
+
                 // child changed, replace child
-                return replaceEntry(offset, null, newChild);
+                return nodeByReplacingOffset(offset, null, newChild);
             }
             // child did not change, return this
             return this;
@@ -276,12 +307,13 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
         if (keyOrNull.equals(key)) {
             // key matches
 
+            @SuppressWarnings("unchecked")
             final V curValue = (V)packedArray[offset + 1];
             final V newValue = updateFn.apply(key, curValue);
 
             if (newValue == null) {
                 size.sizeChange--;
-                return NodeFactory.createNodeByRemovingOffsetFromPackedArray(mask, packedArray, bit, offset);
+                return nodeByRemovingOffset(offset, bit, depth);
             }
 
             if (newValue.equals(curValue)) {
@@ -289,7 +321,7 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
                 return this;
             }
             // value doesn't match, replace it
-            return replaceEntry(offset, key, newValue);
+            return nodeByReplacingOffset(offset, key, newValue);
         }
 
         // key does not match, create new branch
@@ -297,18 +329,21 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
         if (newValue != null) {
             size.sizeChange++;
             final int ourPrefix = computeHashPrefix(keyOrNull, depth);
+            @SuppressWarnings("unchecked")
+            final V ourValue = (V)packedArray[offset + 1];
             final Node<K, V> newNode = NodeFactory.createNodeWithTwoEntries(
+                    depth + 1,
                     prefix << 5, key, newValue,
-                    ourPrefix << 5, (K)keyOrNull, (V)packedArray[offset + 1]
+                    ourPrefix << 5, keyOrNull, ourValue
             );
-            return replaceEntry(offset, null, newNode);
+            return nodeByReplacingOffset(offset, null, newNode);
         }
 
         return this;
 
     }
 
-    private PackedArrayDualNode<K, V> insertEntry(final int bit, final int offset, final Object o1, final Object o2) {
+    private PackedArrayDualNode<K, V> nodeByInsertingAtOffset(final int bit, final int offset, final Object o1, final Object o2) {
         final Object[] newArray = new Object[packedArray.length + 2];
         if (offset > 0) {
             System.arraycopy(packedArray, 0, newArray, 0, offset);
@@ -321,33 +356,69 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
         return new PackedArrayDualNode<>(mask | bit, newArray);
     }
 
-    private PackedArrayDualNode<K, V> replaceEntry(final int offset, final Object o1, final Object o2) {
+    private PackedArrayDualNode<K, V> nodeByReplacingOffset(final int offset, final Object o1, final Object o2) {
         final Object[] newArray = packedArray.clone();
         newArray[offset] = o1;
         newArray[offset + 1] = o2;
         return new PackedArrayDualNode<>(mask, newArray);
     }
 
+    private Node<K, V> nodeByRemovingOffset(final int offset, final int bit, final int depth) {
+        final int lenMinus2 = packedArray.length - 2;
+        if (lenMinus2 <= 0) {
+            return null;
+        }
+        // if there's only one element left, check to see if it's an entry.
+        // if it's an entry, return a SingleEntryNode instead of a PackedArrayDualNode
+        if (lenMinus2 == 2 && depth > 0) {
+            if (offset == 0 && packedArray[2] != null) {
+                @SuppressWarnings("unchecked")
+                final K key = (K)packedArray[2];
+                @SuppressWarnings("unchecked")
+                final V value = (V)packedArray[3];
+                return new SingleEntryNode<>(key, value);
+            }
+            if (offset == 2 && packedArray[0] != null) {
+                @SuppressWarnings("unchecked")
+                final K key = (K)packedArray[0];
+                @SuppressWarnings("unchecked")
+                final V value = (V)packedArray[1];
+                return new SingleEntryNode<>(key, value);
+            }
+        }
+        final Object[] newArray = new Object[lenMinus2];
+        if (offset > 0) {
+            System.arraycopy(packedArray, 0, newArray, 0, offset);
+        }
+        if (offset < lenMinus2) {
+            System.arraycopy(packedArray, offset + 2, newArray, offset, lenMinus2 - offset);
+        }
+        return new PackedArrayDualNode<>(mask & ~bit, newArray);
+    }
+
     @Override
-    @SuppressWarnings("unchecked")
     public void forEachEntry(final BiConsumer<? super K, ? super V> action) {
         for (int offset = 0; offset < packedArray.length; offset += 2) {
-            final Object keyOrNull = packedArray[offset];
+            @SuppressWarnings("unchecked")
+            final K keyOrNull = (K)packedArray[offset];
             if (keyOrNull == null) {
+                @SuppressWarnings("unchecked")
                 final Node<K, V> child = (Node<K, V>)packedArray[offset + 1];
                 child.forEachEntry(action);
             } else {
-                action.accept((K)keyOrNull, (V)packedArray[offset + 1]);
+                @SuppressWarnings("unchecked")
+                final V value = (V)packedArray[offset + 1];
+                action.accept(keyOrNull, value);
             }
         }
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public boolean containsValue(final Object value) {
         for (int offset = 0; offset < packedArray.length; offset += 2) {
             final Object keyOrNull = packedArray[offset];
             if (keyOrNull == null) {
+                @SuppressWarnings("unchecked")
                 final Node<K, V> child = (Node<K, V>)packedArray[offset + 1];
                 if (child.containsValue(value)) {
                     return true;
@@ -377,7 +448,22 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
 
     @Override
     public void computeIteration(int i, NodeEntryIterator<K, V>.Callback callback) {
-
+        final int i2 = i * 2;
+        if (i2 == packedArray.length) {
+            callback.exitNode();
+        } else {
+            @SuppressWarnings("unchecked")
+            final K keyOrNull = (K)packedArray[i2];
+            if (keyOrNull == null) {
+                @SuppressWarnings("unchecked")
+                final Node<K, V> node = (Node<K, V>)packedArray[i2 + 1];
+                callback.enterNode(node);
+            } else {
+                @SuppressWarnings("unchecked")
+                final V value = (V)packedArray[i2 + 1];
+                callback.offer(keyOrNull, value);
+            }
+        }
     }
 
     @Override

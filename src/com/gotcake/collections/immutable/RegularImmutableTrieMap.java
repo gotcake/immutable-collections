@@ -15,9 +15,9 @@ import static com.gotcake.collections.immutable.Util.computeSmearHash;
  */
 final class RegularImmutableTrieMap<K, V> implements ImmutableMap<K, V>, Validatable {
 
-    private final Node<K, V> root;
-    private final int size;
-    private Integer computedHash = null;
+    final Node<K, V> root;
+    final int size;
+    Integer computedHash = null;
 
     private RegularImmutableTrieMap(int size, Node<K, V> root) {
         this.size = size;
@@ -46,8 +46,9 @@ final class RegularImmutableTrieMap<K, V> implements ImmutableMap<K, V>, Validat
         } else {
             size = 2;
             this.root = NodeFactory.createNodeWithTwoEntries(
-                    computeSmearHash(key1), key1, value1,
-                    computeSmearHash(key2), key2, value2
+                    0,
+                    computeSmearHash(key2), key2, value2,
+                    computeSmearHash(key1), key1, value1
             );
         }
     }
@@ -258,7 +259,7 @@ final class RegularImmutableTrieMap<K, V> implements ImmutableMap<K, V>, Validat
         if (key == null) {
             return this;
         }
-        final Node<K, V> newRoot = root.delete(key, computeSmearHash(key));
+        final Node<K, V> newRoot = root.delete(key, computeSmearHash(key), 0);
         if (newRoot == null) {
             return EmptyImmutableMap.getInstance();
         }
