@@ -238,8 +238,7 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
 
                 if (newChild instanceof SingleEntryNode) {
                     // collapse entry into this node
-                    final SingleEntryNode<K, V> entryToCollapse = (SingleEntryNode<K, V>)newChild;
-                    return nodeByReplacingOffset(offset, entryToCollapse.key, entryToCollapse.value);
+                    return nodeByCollapsingNodeAtOffset(offset, (SingleEntryNode<K, V>)newChild);
                 }
 
                 // child changed, replace child
@@ -293,8 +292,7 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
 
                 if (newChild instanceof SingleEntryNode) {
                     // collapse entry into this node
-                    final SingleEntryNode<K, V> entryToCollapse = (SingleEntryNode<K, V>)newChild;
-                    return nodeByReplacingOffset(offset, entryToCollapse.key, entryToCollapse.value);
+                    return nodeByCollapsingNodeAtOffset(offset, (SingleEntryNode<K, V>)newChild);
                 }
 
                 // child changed, replace child
@@ -361,6 +359,13 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
         newArray[offset] = o1;
         newArray[offset + 1] = o2;
         return new PackedArrayDualNode<>(mask, newArray);
+    }
+
+    private Node<K, V> nodeByCollapsingNodeAtOffset(final int offset, final SingleEntryNode<K, V> node) {
+        if (packedArray.length == 2) {
+            return node;
+        }
+        return nodeByReplacingOffset(offset, node.key, node.value);
     }
 
     private Node<K, V> nodeByRemovingOffset(final int offset, final int bit, final int depth) {
