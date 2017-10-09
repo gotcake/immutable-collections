@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import static com.gotcake.collections.immutable.Util.computeHashPrefix;
+import static com.gotcake.collections.immutable.Util.*;
 
 /**
  * A leaf node for holding more than two entries
@@ -431,22 +431,6 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public int computeSize() {
-        int total = 0;
-        for (int offset = 0; offset < packedArray.length; offset += 2) {
-            final Object keyOrNull = packedArray[offset];
-            if (keyOrNull == null) {
-                final Node<K, V> child = (Node<K, V>)packedArray[offset + 1];
-                total += child.computeSize();
-            } else {
-                total += 1;
-            }
-        }
-        return total;
-    }
-
-    @Override
     public void computeIteration(int i, NodeEntryIterator<K, V>.Callback callback) {
         final int i2 = i * 2;
         if (i2 == packedArray.length) {
@@ -491,22 +475,39 @@ class PackedArrayDualNode<K, V> implements Node<K, V> {
     }
 
     @Override
-    public void assertValid(final Assertions a) {
-        a.assertNotEqual(".mask", 0, mask);
-        a.assertNotNull(".packedArray", packedArray);
-        a.assertEqual(".(packedArray.length == bitCount(mask) * 2)", packedArray.length, Integer.bitCount(mask) * 2);
+    public int assertValidAndComputeSize(int suffix, int depth) {
+
+        // suffix math notes
+        // hash = 00001_00010_00011_00100_00101_00110_00
+        // bit0 = 1, bit0 = 2 ..., bit7 = 0
+        // individual parts:
+        // (hash >>> (27 - 5 * 0)) << 27 => 00001
+        // (hash >>> (27 - 5 * 1)) << 27 >>> (5 * 1) => 00000_00010
+        // whole:
+        // (hash >>> (27 - 5 * 1)) << (27 - 5 * 1) => 00001_00010
+        // structural:
+        // 00001 >>> 5 * 0
+        // 00010 >>> 5 * 1
+
+        int total = 0;
+        assertNotEqual("mask must not be 0", 0, mask);
+        assertNotNull("packedArray must not be null", packedArray);
+        assertEqual("packedArray length must match set mask bits", packedArray.length, Integer.bitCount(mask) * 2);
         for (int offset = 0; offset < packedArray.length; offset += 2) {
             final Object keyOrNull = packedArray[offset];
             final Object valueOrChild = packedArray[offset + 1];
             if (keyOrNull == null) {
-                final String childContextStr = "[" + (offset + 1) + "]";
-                a.assertValidType(childContextStr, valueOrChild, Node.class);
-                if (valueOrChild instanceof Validatable) {
-                    a.assertValid(childContextStr, (Validatable)valueOrChild);
-                }
+                assertValidType("child", valueOrChild, false, PackedArrayDualNode.class, PackedArrayCollisionNode.class);
+                @SuppressWarnings("unchecked")
+                final Node<K, V> child = (Node<K, V>)valueOrChild;
+                int bitIndex = nthSetBitPosition(mask, offset / 2);
+                total += child.assertValidAndComputeSize(computeChildHashSuffix(suffix, bitIndex, depth), depth + 1);
             } else {
-                a.assertFalse("[" + offset + "] is not Node", valueOrChild instanceof Node);
+                total++;
+                assertThat("if key is not null, value must not be a node", !(valueOrChild instanceof Node));
+                assertEqualBinary("computed hash suffix must match structural location", suffix, computeHashSuffix(keyOrNull, depth));
             }
         }
+        return total;
     }
 }

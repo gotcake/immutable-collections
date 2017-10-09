@@ -7,7 +7,7 @@ import java.util.function.BiFunction;
  * An ImmutableTrieMap tree node
  * @author Aaron Cake
  */
-interface Node<K, V> extends Validatable {
+interface Node<K, V> {
 
     V get(K key, int prefix);
     Node<K, V> set(K key, V value, int prefix, int depth, SizeChangeSink size);
@@ -18,7 +18,8 @@ interface Node<K, V> extends Validatable {
 
     void forEachEntry(BiConsumer<? super K, ? super V> action);
     boolean containsValue(Object value);
-    int computeSize();
     void computeIteration(int i, NodeEntryIterator<K, V>.Callback callback);
+
+    int assertValidAndComputeSize(int suffix, int depth);
 
 }

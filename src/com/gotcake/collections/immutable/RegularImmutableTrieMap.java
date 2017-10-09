@@ -6,7 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import static com.gotcake.collections.immutable.Util.computeSmearHash;
+import static com.gotcake.collections.immutable.Util.*;
 
 /**
  * An immutable data structure based on the Hash Array Mapped Trie described at
@@ -278,11 +278,9 @@ final class RegularImmutableTrieMap<K, V> implements ImmutableMap<K, V>, Validat
     }
 
     @Override
-    public void assertValid(final Assertions a) {
-        a.assertNotNull(".root", root);
-        if (root != null) {
-            a.assertEqual(".(size == computedSize)", size, root.computeSize());
-            a.assertValid(".root", root);
-        }
+    public void assertValid() {
+        assertValidType("root", root, false, PackedArrayDualNode.class);
+        int computedSize = root.assertValidAndComputeSize(0, 0);
+        assertEqual("Size must equal computed size", size, computedSize);
     }
 }

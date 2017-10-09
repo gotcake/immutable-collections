@@ -3,6 +3,8 @@ package com.gotcake.collections.immutable;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
+import static com.gotcake.collections.immutable.Util.*;
+
 /**
  * A node for holding multiple entries with the same hash value
  * @author Aaron Cake
@@ -169,11 +171,6 @@ public class PackedArrayCollisionNode<K, V> implements Node<K, V> {
     }
 
     @Override
-    public int computeSize() {
-        return packedArray.length / 2;
-    }
-
-    @Override
     public void computeIteration(int i, NodeEntryIterator<K, V>.Callback callback) {
         final int i2 = i * 2;
         if (i2 == packedArray.length) {
@@ -185,6 +182,18 @@ public class PackedArrayCollisionNode<K, V> implements Node<K, V> {
             final V value = (V)packedArray[i2 + 1];
             callback.offer(key, value);
         }
+    }
+
+    @Override
+    public int assertValidAndComputeSize(int suffix, int depth) {
+        assertThat("length must be greater than 2", packedArray.length > 2);
+        assertEqual("PackedArrayCollisionNodes must only appear at depth 7", 7, depth);
+        int firstHash = computeSmearHash(packedArray[0]);
+        assertEqualBinary("hash must match structural location", suffix, firstHash);
+        for (int i = 2; i < packedArray.length; i += 2) {
+            assertEqualBinary("hashes of all items must be equal", firstHash, computeSmearHash(packedArray[i]));
+        }
+        return packedArray.length / 2;
     }
 
     @Override
@@ -210,8 +219,4 @@ public class PackedArrayCollisionNode<K, V> implements Node<K, V> {
         return result;
     }
 
-    @Override
-    public void assertValid(Assertions a) {
-        // TODO: check that hashes are equal
-    }
 }

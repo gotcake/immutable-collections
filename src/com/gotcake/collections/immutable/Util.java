@@ -83,7 +83,7 @@ public final class Util {
      * @return the hash prefix for the object and current tree depth
      */
     static int computeHashSuffix(final Object obj, final int depth) {
-        if (DEBUG && (depth < 0 || depth > 7)) {
+        if (depth < 0 || depth > 7) {
             throw new IllegalArgumentException("Invalid depth " + depth + ". Must be in range [0, 7]");
         }
         if (depth == 0) { // handle 0 separately since shifting by 32 does nothing
@@ -104,7 +104,7 @@ public final class Util {
      * @return the position of the nth set bit
      */
     static int nthSetBitPosition(int mask, int n) {
-        if (DEBUG && (n < 0 || n >= Integer.bitCount(mask))) {
+        if (n < 0 || n >= Integer.bitCount(mask)) {
             throw new IndexOutOfBoundsException("Invalid bit position " + n + " for integer " + Integer.toHexString(mask));
         }
         int pos = -1;
@@ -130,7 +130,7 @@ public final class Util {
             throw new IndexOutOfBoundsException("Invalid curDepth " + curDepth);
         }
         if (curDepth == 6) {
-            return suffix | bitIndex >> 3;
+            return suffix | bitIndex >>> 3;
         }
         return suffix | (bitIndex << (27 - (curDepth * 5)));
     }
@@ -169,6 +169,14 @@ public final class Util {
             throw new IllegalStateException("Assertion Failed: " + msg +
                     "; expected=" + expected +
                     "), actual=" + actual);
+        }
+    }
+
+    public static void assertNotEqual(final String msg, final Object notExpected, Object actual) {
+        if (Objects.equals(notExpected, actual)) {
+            throw new IllegalStateException("Assertion Failed: " + msg +
+                    "; not expected=" + notExpected +
+                    ", actual=" + actual);
         }
     }
 

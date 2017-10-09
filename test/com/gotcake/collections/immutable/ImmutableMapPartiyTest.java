@@ -123,7 +123,7 @@ public class ImmutableMapPartiyTest {
                 }
                 switch (parts[0]) {
                     case "c":
-                        Validatable.tryAssertValid("test", map);
+                        Validatable.tryAssertValid(map);
                         assertTrue(map.equals(reference));
                         break;
                     case "r":

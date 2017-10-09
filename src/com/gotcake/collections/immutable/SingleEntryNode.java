@@ -4,7 +4,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 /**
- * The node used when only a single entry is left and it should be collapsed into the parent node
+ * A temporary node used when only a single entry is left and it should be collapsed into the parent node
  * @author Aaron Cake
  */
 class SingleEntryNode<K, V> implements Node<K, V> {
@@ -58,17 +58,13 @@ class SingleEntryNode<K, V> implements Node<K, V> {
     }
 
     @Override
-    public int computeSize() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void computeIteration(int i, NodeEntryIterator<K, V>.Callback callback) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void assertValid(Assertions a) {
-
+    public int assertValidAndComputeSize(int suffix, int depth) {
+        throw new UnsupportedOperationException();
     }
+
 }

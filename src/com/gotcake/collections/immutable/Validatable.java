@@ -6,15 +6,12 @@ package com.gotcake.collections.immutable;
  */
 interface Validatable {
 
-    static void tryAssertValid(final String context, final Object o) {
-        final Assertions assertions = new Assertions(context);
+    static void tryAssertValid(final Object o) {
         if (o instanceof Validatable) {
-            ((Validatable)o).assertValid(assertions);
+            ((Validatable)o).assertValid();
         }
-        assertions.printFailedAssertions(System.err);
-        assertions.throwIfFailedAssertions();
     }
 
-    void assertValid(Assertions a);
+    void assertValid();
 
 }
