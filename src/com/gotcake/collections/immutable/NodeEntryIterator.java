@@ -21,21 +21,24 @@ abstract class NodeEntryIterator<K, V> {
         void enterNode(final Node<K, V> node) {
             final StackEntry<K, V> entry = new StackEntry<>(node);
             stack.push(entry);
-            node.computeIteration(entry.index++, this);
+            final int index = entry.index++;
+            node.computeIteration(index, this);
         }
 
         void replaceNode(final Node<K, V> node) {
             final StackEntry entry = stack.peek();
             entry.index = 0;
             entry.node = node;
-            node.computeIteration(entry.index++, this);
+            final int index = entry.index++;
+            node.computeIteration(index, this);
         }
 
         void exitNode() {
             stack.pop();
             final StackEntry<K, V> entry = stack.peek();
             if (entry != null) {
-                entry.node.computeIteration(entry.index++, this);
+                final int index = entry.index++;
+                entry.node.computeIteration(index, this);
             }
         }
 
