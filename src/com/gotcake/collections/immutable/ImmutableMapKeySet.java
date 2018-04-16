@@ -1,51 +1,63 @@
 package com.gotcake.collections.immutable;
 
-import java.util.*;
-import java.util.function.Consumer;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Predicate;
 
 /**
- * @author Aaron Cake (gotcake)
+ * A special ImmutableSet that wraps the keys of an ImmutableMap
  */
-class ImmutableMapKeySet<T> implements ImmutableSet<T> {
+public class ImmutableMapKeySet<K, V> extends MapBackedImmutableTrieSet<K> {
 
-    private final ImmutableMap<T, ?> map;
-
-    ImmutableMapKeySet(ImmutableMap<T, ?> map) {
-        this.map = map;
+    ImmutableMapKeySet(final ImmutableMap<K, V> map) {
+        super(map);
     }
 
     @Override
-    public int size() {
-        return map.size();
+    public ImmutableMapKeySet<K, V> delete(final K element) {
+        final ImmutableMap<K, V> newMap = getMap().delete(element);
+        if (newMap != map) {
+            if (newMap.size() == 0) {
+                return new ImmutableMapKeySet<>(EmptyImmutableMap.getInstance());
+            }
+            return new ImmutableMapKeySet<>(newMap);
+        }
+        return this;
     }
 
     @Override
-    public boolean isEmpty() {
-        return map.isEmpty();
+    public ImmutableMapKeySet<K, V> filter(final Predicate<K> predicate) {
+        final ImmutableMap<K, V> newMap = getMap().filterKeys(predicate);
+        if (newMap != map) {
+            return new ImmutableMapKeySet<>(newMap);
+        }
+        return this;
     }
 
     @Override
-    public boolean contains(Object o) {
-        return map.containsKey(o);
+    public ImmutableMapKeySet<K, V> keepAll(final Collection<? extends K> elements) {
+        final Set set;
+        // if input is not a set, make a copy so contains check if O(1)
+        if (elements instanceof Set) {
+            set = (Set)elements;
+        } else {
+            set = new HashSet<>(elements);
+        }
+        return this.filter(set::contains);
     }
 
     @Override
-    public Iterator<T> iterator() {
-        return map.keyIterator();
+    public ImmutableMapKeySet<K, V> deleteAll(final Collection<? extends K> elements) {
+        ImmutableMapKeySet<K, V> set = this;
+        for (final K element: elements) {
+            set = set.delete(element);
+        }
+        return set;
     }
 
-    @Override
-    public void forEach(Consumer<? super T> action) {
-        map.forEachKey(action);
-    }
-
-    @Override
-    public ImmutableMapKeySet<T> insert(T element) {
-        throw new UnsupportedOperationException("insert is not supported");
-    }
-
-    @Override
-    public ImmutableMapKeySet<T> delete(T element) {
-        throw new UnsupportedOperationException("delete is not supported");
+    @SuppressWarnings("unchecked")
+    public ImmutableMap<K, V> getMap() {
+        return (ImmutableMap<K, V>)map;
     }
 }

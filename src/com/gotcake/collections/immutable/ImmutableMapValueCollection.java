@@ -6,11 +6,11 @@ import java.util.function.Consumer;
 /**
  * @author Aaron Cake (acake)
  */
-class ImmutableMapValueCollection<T> implements ImmutableCollection<T> {
+class ImmutableMapValueCollection<K, V> implements ImmutableCollection<V> {
 
-    private final ImmutableMap<?, T> map;
+    private final ImmutableMap<K, V> map;
 
-    ImmutableMapValueCollection(ImmutableMap<?, T> map) {
+    ImmutableMapValueCollection(final ImmutableMap<K, V> map) {
         this.map = map;
     }
 
@@ -30,12 +30,14 @@ class ImmutableMapValueCollection<T> implements ImmutableCollection<T> {
     }
 
     @Override
-    public Iterator<T> iterator() {
+    public Iterator<V> iterator() {
         return map.valueIterator();
     }
 
     @Override
-    public void forEach(Consumer<? super T> action) {
+    public void forEach(final Consumer<? super V> action) {
         map.forEachValue(action);
     }
+
+
 }

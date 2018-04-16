@@ -142,18 +142,18 @@ final class EmptyImmutableMap<K, V> implements ImmutableMap<K, V> {
     }
 
     @Override
-    public Set<Map.Entry<K, V>> entrySet() {
-        return Collections.emptySet();
+    public ImmutableMapEntrySet<K, V> entrySet() {
+        return new ImmutableMapEntrySet<>(this);
     }
 
     @Override
-    public Set<K> keySet() {
-        return Collections.emptySet();
+    public ImmutableMapKeySet<K, V> keySet() {
+        return new ImmutableMapKeySet<>(this);
     }
 
     @Override
-    public Collection<V> values() {
-        return Collections.emptyList();
+    public ImmutableCollection<V> values() {
+        return new ImmutableMapValueCollection<>(this);
     }
 
     @Override

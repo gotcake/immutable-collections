@@ -1,15 +1,17 @@
 package com.gotcake.collections.immutable;
 
 import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
  * @author Aaron Cake
  */
-final class EmptyImmutableSet<T> implements ImmutableSet<T> {
+class EmptyImmutableSet<T> implements ImmutableSet<T> {
 
     private static EmptyImmutableSet INSTANCE = new EmptyImmutableSet();
 
@@ -18,7 +20,7 @@ final class EmptyImmutableSet<T> implements ImmutableSet<T> {
         return INSTANCE;
     }
 
-    private EmptyImmutableSet() {}
+    protected EmptyImmutableSet() {}
 
     private static Object[] EMPTY_ARRAY = new Object[0];
 
@@ -78,6 +80,27 @@ final class EmptyImmutableSet<T> implements ImmutableSet<T> {
     }
 
     @Override
+    public ImmutableSet<T> filter(final Predicate<T> predicate) {
+        return this;
+    }
+
+    @Override
+    public ImmutableSet<T> insertAll(final Collection<? extends T> elements) {
+        return ImmutableSet.of(elements);
+    }
+
+
+    @Override
+    public ImmutableSet<T> keepAll(final  Collection<? extends T> elements) {
+        return this;
+    }
+
+    @Override
+    public ImmutableSet<T> deleteAll(final Collection<? extends T> elements) {
+        return this;
+    }
+
+    @Override
     public Object[] toArray() {
         return EMPTY_ARRAY;
     }
@@ -86,6 +109,11 @@ final class EmptyImmutableSet<T> implements ImmutableSet<T> {
     @SuppressWarnings("unchecked")
     public <T1> T1[] toArray(final T1[] a) {
         return a.length == 0 ? a : (T1[]) Array.newInstance(a.getClass().getComponentType(), 0);
+    }
+
+    @Override
+    public boolean containsAll(final Collection<?> c) {
+        return c.isEmpty();
     }
 
 }

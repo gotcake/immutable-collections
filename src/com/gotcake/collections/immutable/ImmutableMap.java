@@ -1,9 +1,7 @@
 package com.gotcake.collections.immutable;
 
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.*;
 
 /**
  * @author Aaron Cake (acake)
@@ -25,6 +23,10 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
 
     static <K, V> ImmutableMap<K, V> of(K key1, V value1, K key2, V value2, K key3, V value3) {
         return of(key1, value1, key2, value2).set(key3, value3);
+    }
+
+    static <K, V> ImmutableMap<K, V> of(final Map<? extends K, ? extends V> map) {
+        return new RegularImmutableTrieMap<>(map);
     }
 
     /**
@@ -166,7 +168,7 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
      * @return the new map instance, or the this instance if no modifications were necessary
      * @throws NullPointerException the map, or a key or value in the map were empty
      */
-    default ImmutableMap<K, V> setAll(final Map<K, V> sourceMap) {
+    default ImmutableMap<K, V> setAll(final Map<? extends K, ? extends V> sourceMap) {
         ImmutableMap<K, V> map = this;
         for (final K key: sourceMap.keySet()) {
             map = map.set(key, sourceMap.get(key));
@@ -237,7 +239,7 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
      * @param keys the keys to delete
      * @return the new map, or this object if no modification was required
      */
-    default ImmutableMap<K, V> deleteAll(final Iterable<K> keys) {
+    default ImmutableMap<K, V> deleteAll(final Collection<? extends K> keys) {
         ImmutableMap<K, V> map = this;
         for (final K key: keys) {
             map = map.delete(key);
@@ -265,6 +267,24 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
         });
     }
 
+    /**
+     * Filters the entries of this map via the given predicate
+     * @param predicate a function called for each key-value pair, returning true to keep, or false to remove
+     * @return the new map, or this object if no modification was required
+     */
+    default ImmutableMap<K, V> filter(final BiPredicate<K, V> predicate) {
+        return updateAll((k, v) -> predicate.test(k, v) ? v : null);
+    }
+
+    /**
+     * Filters the keys of this map via the given predicate
+     * @param predicate a function called for each key, returning true to keep, or false to remove
+     * @return the new map, or this object if no modification was required
+     */
+    default ImmutableMap<K, V> filterKeys(final Predicate<K> predicate) {
+        return updateAll((k, v) -> predicate.test(k) ? v : null);
+    }
+
     @Override
     @Deprecated
     default V put(K key, V value) {
@@ -290,71 +310,71 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
     }
 
     @Override
-    default Set<Map.Entry<K, V>> entrySet() {
+    default ImmutableMapEntrySet<K, V> entrySet() {
         return new ImmutableMapEntrySet<>(this);
     }
 
     @Override
-    default Set<K> keySet() {
+    default ImmutableMapKeySet<K, V> keySet() {
         return new ImmutableMapKeySet<>(this);
     }
 
     @Override
-    default Collection<V> values() {
+    default ImmutableCollection<V> values() {
         return new ImmutableMapValueCollection<>(this);
     }
 
     @Override
     @Deprecated
-    default void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
+    default void replaceAll(final BiFunction<? super K, ? super V, ? extends V> function) {
         throw new UnsupportedOperationException("replaceAll is not supported, use updateAll instead");
     }
 
     @Override
     @Deprecated
-    default V putIfAbsent(K key, V value) {
+    default V putIfAbsent(final K key, final V value) {
         throw new UnsupportedOperationException("putIfAbsent is not supported");
     }
 
     @Override
     @Deprecated
-    default boolean remove(Object key, Object value) {
+    default boolean remove(final Object key, final Object value) {
         throw new UnsupportedOperationException("remove is not supported, use deleteIfMatch instead");
     }
 
     @Override
     @Deprecated
-    default boolean replace(K key, V oldValue, V newValue) {
+    default boolean replace(final K key, final V oldValue, final V newValue) {
         throw new UnsupportedOperationException("replace is not supported, use setIfMatch instead");
     }
 
     @Override
     @Deprecated
-    default V replace(K key, V value) {
+    default V replace(final K key, final V value) {
         throw new UnsupportedOperationException("replace is not supported, use setIfExists instead");
     }
 
     @Override
     @Deprecated
-    default V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+    default V computeIfAbsent(final K key, final Function<? super K, ? extends V> mappingFunction) {
         throw new UnsupportedOperationException("computeIfAbsent is not supported, use updateIfAbsent instead");
     }
 
     @Override
     @Deprecated
-    default V computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+    default V computeIfPresent(final K key, final BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         throw new UnsupportedOperationException("computeIfPresent is not supported, use updateIfPresent instead");
     }
 
     @Override
     @Deprecated
-    default V compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+    default V compute(final K key, final BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         throw new UnsupportedOperationException("compute is not supported, use update instead");
     }
 
     @Override
     @Deprecated
-    default V merge(K key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+    default V merge(final K key, final V value, final BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
         throw new UnsupportedOperationException("merge is not supported");
     }
 

@@ -2,6 +2,7 @@ package com.gotcake.collections.immutable;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -51,6 +52,42 @@ final class RegularImmutableTrieMap<K, V> implements ImmutableMap<K, V>, Validat
                     computeSmearHash(key1), key1, value1
             );
         }
+    }
+
+    RegularImmutableTrieMap(final Map<? extends K, ? extends  V> sourceMap) {
+        if (sourceMap.isEmpty()) {
+            throw new IllegalArgumentException("sourceMap must not be empty");
+        }
+        @SuppressWarnings("unchecked")
+        final Iterator<Map.Entry<K, V>> it = (Iterator)sourceMap.entrySet().iterator();
+        Map.Entry<K, V> entry = it.next();
+        final int bitIndex = computeSmearHash(entry.getKey()) >>> 27;
+        Node<K, V> root = NodeFactory.createNodeWithSingleEntry(bitIndex, entry.getKey(), entry.getValue());
+        while (it.hasNext()) {
+            entry = it.next();
+            final int hash = computeSmearHash(entry.getKey());
+            root = root.setIfNotExists(entry.getKey(), entry.getValue(), hash, 0);
+        }
+        this.root = root;
+        this.size = sourceMap.size();
+    }
+
+    RegularImmutableTrieMap(final Set<? extends K> keys, final V valueForAll) {
+        if (keys.isEmpty()) {
+            throw new IllegalArgumentException("key set must not be empty");
+        }
+        @SuppressWarnings("unchecked")
+        final Iterator<K> it = (Iterator)keys.iterator();
+        K key = it.next();
+        final int bitIndex = computeSmearHash(key) >>> 27;
+        Node<K, V> root = NodeFactory.createNodeWithSingleEntry(bitIndex, key, valueForAll);
+        while (it.hasNext()) {
+            key = it.next();
+            final int hash = computeSmearHash(key);
+            root = root.setIfNotExists(key, valueForAll, hash, 0);
+        }
+        this.root = root;
+        this.size = keys.size();
     }
 
     /**

@@ -20,18 +20,20 @@ public interface ImmutableCollection<T> extends Collection<T> {
         return Iterators.toArrayTypeChecked(size(), iterator(), a);
     }
 
+    @Deprecated
     @Override
-    default boolean add(T item) {
+    default boolean add(final T item) {
         throw new UnsupportedOperationException("add is not supported");
     }
 
+    @Deprecated
     @Override
-    default boolean remove(Object o) {
+    default boolean remove(final Object o) {
         throw new UnsupportedOperationException("remove is not supported");
     }
 
     @Override
-    default boolean containsAll(Collection<?> c) {
+    default boolean containsAll(final Collection<?> c) {
         for (Object o: c) {
             if (!contains(o)) {
                 return false;
@@ -40,23 +42,27 @@ public interface ImmutableCollection<T> extends Collection<T> {
         return true;
     }
 
+    @Deprecated
     @Override
-    default boolean addAll(Collection<? extends T> c) {
+    default boolean addAll(final Collection<? extends T> c) {
         throw new UnsupportedOperationException("addAll is not supported");
     }
 
+    @Deprecated
     @Override
-    default boolean retainAll(Collection<?> c) {
+    default boolean retainAll(final Collection<?> c) {
         throw new UnsupportedOperationException("retainAll is not supported");
     }
 
+    @Deprecated
     @Override
-    default boolean removeAll(Collection<?> c) {
+    default boolean removeAll(final Collection<?> c) {
         throw new UnsupportedOperationException("removeAll is not supported");
     }
 
+    @Deprecated
     @Override
-    default boolean removeIf(Predicate<? super T> filter) {
+    default boolean removeIf(final Predicate<? super T> filter) {
         throw new UnsupportedOperationException("removeIf is not supported");
     }
 

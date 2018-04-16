@@ -1,16 +1,16 @@
 package com.gotcake.collections.immutable;
 
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * @author Aaron Cake (gotcake)
  */
-class ImmutableMapEntrySet<K, V> implements ImmutableSet<Map.Entry<K, V>> {
+public class ImmutableMapEntrySet<K, V> implements ImmutableSet<Map.Entry<K, V>> {
 
     private final ImmutableMap<K, V> map;
 
-    ImmutableMapEntrySet(ImmutableMap<K, V> map) {
+    ImmutableMapEntrySet(final ImmutableMap<K, V> map) {
         this.map = map;
     }
 
@@ -26,7 +26,7 @@ class ImmutableMapEntrySet<K, V> implements ImmutableSet<Map.Entry<K, V>> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public boolean contains(Object o) {
+    public boolean contains(final Object o) {
         if (!(o instanceof Map.Entry)) {
             return false;
         }
@@ -41,12 +41,64 @@ class ImmutableMapEntrySet<K, V> implements ImmutableSet<Map.Entry<K, V>> {
     }
 
     @Override
-    public ImmutableMapEntrySet<K, V> insert(Map.Entry<K, V> element) {
-        throw new UnsupportedOperationException("insert is not supported");
+    public ImmutableMapEntrySet<K, V> insert(final Map.Entry<K, V> element) {
+        final ImmutableMap<K, V> newMap = map.setIfAbsent(element.getKey(), element.getValue());
+        if (newMap != map) {
+            return new ImmutableMapEntrySet<>(newMap);
+        }
+        return this;
     }
 
     @Override
-    public ImmutableMapEntrySet<K, V> delete(Map.Entry<K, V> element) {
-        throw new UnsupportedOperationException("delete is not supported");
+    public ImmutableMapEntrySet<K, V> delete(final Map.Entry<K, V> element) {
+        final ImmutableMap<K, V> newMap = map.setIfAbsent(element.getKey(), element.getValue());
+        if (newMap != map) {
+            return new ImmutableMapEntrySet<>(newMap);
+        }
+        return this;
     }
+
+    @Override
+    public ImmutableMapEntrySet<K, V> filter(final Predicate<Map.Entry<K, V>> predicate) {
+        final ImmutableMap<K, V> newMap = map.filter((k, v) -> predicate.test(new ImmutableMap.Entry<>(k, v)));
+        if (newMap != map) {
+            return new ImmutableMapEntrySet<>(newMap);
+        }
+        return this;
+    }
+
+    @Override
+    public ImmutableMapEntrySet<K, V> insertAll(final Collection<? extends Map.Entry<K, V>> elements) {
+        ImmutableMapEntrySet<K, V> set = this;
+        for (final Map.Entry<K, V> element: elements) {
+            set = set.insert(element);
+        }
+        return set;
+    }
+
+    @Override
+    public ImmutableMapEntrySet<K, V> keepAll(Collection<? extends Map.Entry<K, V>> elements) {
+        final Set set;
+        // if input is not a set, make a copy so contains is a fast check
+        if (elements instanceof Set) {
+            set = (Set)elements;
+        } else {
+            set = new HashSet<>(elements);
+        }
+        return this.filter(set::contains);
+    }
+
+    @Override
+    public ImmutableMapEntrySet<K, V> deleteAll(Collection<? extends Map.Entry<K, V>> elements) {
+        ImmutableMapEntrySet<K, V> set = this;
+        for (final Map.Entry<K, V> element: elements) {
+            set = set.delete(element);
+        }
+        return set;
+    }
+
+    public ImmutableMap<K, V> getMap() {
+        return map;
+    }
+
 }

@@ -1,5 +1,7 @@
 package com.gotcake.collections.immutable;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -22,6 +24,18 @@ public final class TestHelper {
 
     public static String generateRandomString(final StringBuilder buffer, final Random random, final int maxLength) {
         return generateRandomString(buffer, random, 2, maxLength);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <K, V> Map<K, V> makeMap(final Object... data) {
+        if (data.length % 2 != 0) {
+            throw new IllegalArgumentException();
+        }
+        final Map<K, V> map = new HashMap<>();
+        for (int i = 0; i < data.length; i += 2) {
+            map.put((K)data[i], (V)data[i+1]);
+        }
+        return map;
     }
 
     private TestHelper() { throw new UnsupportedOperationException(); }
