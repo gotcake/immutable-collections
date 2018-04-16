@@ -76,7 +76,7 @@ public interface ImmutableMap<K, V> extends Map<K, V> {
     }
 
     boolean containsEntry(final K key, final V value);
-    Iterator<ImmutableMap.Entry<K, V>> entryIterator();
+    Iterator<Map.Entry<K, V>> entryIterator();
     Iterator<K> keyIterator();
     Iterator<V> valueIterator();
     void forEachKey(Consumer<? super K> action);

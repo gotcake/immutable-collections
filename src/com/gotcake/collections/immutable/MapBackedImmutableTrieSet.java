@@ -9,7 +9,7 @@ import java.util.function.Predicate;
  * A simple ImmutableSet implementation backed by an ImmutableMap
  * @author Aaron Cake
  */
-class MapBackedImmutableTrieSet<T> implements ImmutableSet<T> {
+class MapBackedImmutableTrieSet<T> extends AbstractImmutableSet<T> {
 
     protected final ImmutableMap<T, ?> map;
 
@@ -48,11 +48,6 @@ class MapBackedImmutableTrieSet<T> implements ImmutableSet<T> {
     @Override
     public void forEach(final Consumer<? super T> action) {
         map.forEachKey(action);
-    }
-
-    @Override
-    public int hashCode() {
-        return map.hashCode();
     }
 
     @Override

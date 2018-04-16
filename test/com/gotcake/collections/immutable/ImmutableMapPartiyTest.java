@@ -63,11 +63,11 @@ public class ImmutableMapPartiyTest {
             map = temp;
         }
         final Set<String> keySet = new HashSet<>(hashMap.keySet());
-        final Iterator<ImmutableMap.Entry<String, Integer>> it = map.entryIterator();
+        final Iterator<Map.Entry<String, Integer>> it = map.entryIterator();
         while (it.hasNext()) {
-            final ImmutableMap.Entry<String, Integer> entry = it.next();
-            assertTrue("Iterator must iterate over existing keys only once", keySet.remove(entry.key));
-            assertEquals("Iterator Entries must  have correct value", hashMap.get(entry.key), entry.value);
+            final Map.Entry<String, Integer> entry = it.next();
+            assertTrue("Iterator must iterate over existing keys only once", keySet.remove(entry.getKey()));
+            assertEquals("Iterator Entries must  have correct value", hashMap.get(entry.getKey()), entry.getValue());
         }
         //Validatable.tryAssertValid(map);
         //DebugPrintable.tryPrintDebug(map);

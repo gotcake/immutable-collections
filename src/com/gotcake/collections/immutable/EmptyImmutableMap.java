@@ -26,7 +26,7 @@ final class EmptyImmutableMap<K, V> implements ImmutableMap<K, V> {
     }
 
     @Override
-    public Iterator<ImmutableMap.Entry<K, V>> entryIterator() {
+    public Iterator<Map.Entry<K, V>> entryIterator() {
         return Iterators.empty();
     }
 

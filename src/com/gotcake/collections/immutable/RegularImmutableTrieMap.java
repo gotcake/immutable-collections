@@ -18,7 +18,6 @@ final class RegularImmutableTrieMap<K, V> implements ImmutableMap<K, V>, Validat
 
     final Node<K, V> root;
     final int size;
-    Integer computedHash = null;
 
     private RegularImmutableTrieMap(int size, Node<K, V> root) {
         this.size = size;
@@ -226,7 +225,7 @@ final class RegularImmutableTrieMap<K, V> implements ImmutableMap<K, V>, Validat
      * @return an iterator over entries
      */
     @Override
-    public Iterator<ImmutableMap.Entry<K, V>> entryIterator() {
+    public Iterator<Map.Entry<K, V>> entryIterator() {
         return new NodeEntryIterator.EntryIterator<>(root);
     }
 
@@ -308,10 +307,12 @@ final class RegularImmutableTrieMap<K, V> implements ImmutableMap<K, V>, Validat
 
     @Override
     public int hashCode() {
-        if (computedHash == null) {
-            computedHash = root.hashCode();
+        final NodeEntryIterator.HashIterator it = new NodeEntryIterator.HashIterator<>(root);
+        int hash = 0;
+        while (it.hasNext()) {
+            hash += it.next();
         }
-        return computedHash;
+        return hash;
     }
 
     @Override

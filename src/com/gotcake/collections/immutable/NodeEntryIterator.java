@@ -3,6 +3,7 @@ package com.gotcake.collections.immutable;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * A method for efficiently iterating over entries (or keys, or values) in a tree of Nodes
@@ -116,14 +117,14 @@ abstract class NodeEntryIterator<K, V> {
         }
     }
 
-    static class EntryIterator<K, V> extends NodeEntryIterator<K, V> implements Iterator<ImmutableMap.Entry<K, V>> {
+    static class EntryIterator<K, V> extends NodeEntryIterator<K, V> implements Iterator<Map.Entry<K, V>> {
 
         EntryIterator(final Node<K, V> node) {
             super(node);
         }
 
         @Override
-        public ImmutableMap.Entry<K, V> next() {
+        public Map.Entry<K, V> next() {
             if (didComputeNext || tryComputeNext()) {
                 final K key = nextKey;
                 final V value = nextValue;
@@ -133,6 +134,25 @@ abstract class NodeEntryIterator<K, V> {
                 return new ImmutableMap.Entry<>(key, value);
             }
             return null;
+        }
+    }
+
+    static class HashIterator<K, V> extends NodeEntryIterator<K, V> {
+
+        HashIterator(final Node<K, V> node) {
+            super(node);
+        }
+
+        public int next() {
+            if (didComputeNext || tryComputeNext()) {
+                final K key = nextKey;
+                final V value = nextValue;
+                nextKey = null;
+                nextValue = null;
+                didComputeNext = false;
+                return key.hashCode() ^ value.hashCode();
+            }
+            return 0;
         }
     }
 

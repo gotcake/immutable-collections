@@ -1,8 +1,9 @@
 package com.gotcake.collections.immutable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /**
  * Static helper methods for tests
@@ -31,11 +32,40 @@ public final class TestHelper {
         if (data.length % 2 != 0) {
             throw new IllegalArgumentException();
         }
-        final Map<K, V> map = new HashMap<>();
+        final Map<K, V> map = new LinkedHashMap<>();
         for (int i = 0; i < data.length; i += 2) {
             map.put((K)data[i], (V)data[i+1]);
         }
         return map;
+    }
+
+    public static <V> Map<V, Integer> computeValueCounts(final Collection<V> values) {
+        final Map<V, Integer> counts = new HashMap<>();
+        for (final V value: values) {
+            final Integer curCount = counts.get(value);
+            if (curCount == null) {
+                counts.put(value, 1);
+            } else {
+                counts.put(value, curCount + 1);
+            }
+        }
+        return counts;
+    }
+
+    public static <V> Map<V, Integer> computeValueCounts(final Map<?, V> map) {
+        return computeValueCounts(map.values());
+    }
+
+    public static <V> void decrementValueCount(final Map<V, Integer> counts, final V value) {
+        final Integer curCount = counts.get(value);
+        if (curCount == null) {
+            fail("too many of value: " + value);
+        }
+        if (curCount == 1) {
+            counts.remove(value);
+        } else {
+            counts.put(value, curCount - 1);
+        }
     }
 
     private TestHelper() { throw new UnsupportedOperationException(); }

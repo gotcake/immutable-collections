@@ -6,7 +6,7 @@ import java.util.function.Predicate;
 /**
  * @author Aaron Cake (gotcake)
  */
-public class ImmutableMapEntrySet<K, V> implements ImmutableSet<Map.Entry<K, V>> {
+public class ImmutableMapEntrySet<K, V> extends AbstractImmutableSet<Map.Entry<K, V>> {
 
     private final ImmutableMap<K, V> map;
 
@@ -99,6 +99,11 @@ public class ImmutableMapEntrySet<K, V> implements ImmutableSet<Map.Entry<K, V>>
 
     public ImmutableMap<K, V> getMap() {
         return map;
+    }
+
+    @Override
+    public int hashCode() {
+        return map.hashCode();
     }
 
 }

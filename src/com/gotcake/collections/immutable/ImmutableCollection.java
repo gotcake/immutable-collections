@@ -1,8 +1,6 @@
 package com.gotcake.collections.immutable;
 
-import java.util.Collection;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.function.Predicate;
 
 /**
@@ -66,6 +64,7 @@ public interface ImmutableCollection<T> extends Collection<T> {
         throw new UnsupportedOperationException("removeIf is not supported");
     }
 
+    @Deprecated
     @Override
     default void clear() {
         throw new UnsupportedOperationException("clear is not supported");
